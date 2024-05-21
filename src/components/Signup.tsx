@@ -3,6 +3,7 @@
 import axios from "axios";
 import Link from "next/link";
 import React, { useState } from "react";
+import '../styles/global.css';
 
 const Signup = () => {
   const [name,setName]=useState<string>("")
@@ -19,7 +20,7 @@ const Signup = () => {
     <section className="text-gray-600 body-font relative bg-[#edf5ff] h-[100vh]"> 
     <div className="flex justify-center items-center h-full">
     <div className="flex flex-col  w-[40%] mb-12 mx-auto  bg-white px-10 py-20">
-        <h1 className="pb-5 text-center text-black">Signup Form</h1>
+        <h1 className="pb-5 text-center text-black">Signup</h1>
 <form onSubmit={onSubmit}>
   <div className="mb-6">
     <label htmlFor="name" className="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Your name</label>
@@ -49,7 +50,7 @@ const Signup = () => {
      </Link>
      </span>
          </h3>
-</div>
+  </div>
 
   <button type="submit" className="text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm w-full sm:w-auto px-5 py-2.5 text-center dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800">Submit</button>
 </form>

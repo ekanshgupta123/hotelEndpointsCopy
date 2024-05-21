@@ -7,7 +7,7 @@ import mongoose from "mongoose";
 
 export default async function connection() {
     try {
-        await mongoose.connect("mongodb://127.0.0.1:27017/arjun")
+        await mongoose.connect("mongodb://localhost:27017/next-auth")
         console.log('connection true')
     } catch (err) {
         console.log(err)

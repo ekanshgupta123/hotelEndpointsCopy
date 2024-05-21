@@ -4,22 +4,31 @@
 import axios from "axios";
 import Link from "next/link";
 import React, { useState } from "react";
+import { redirect } from 'next/navigation'
+import '../styles/global.css';
+import { useRouter } from "next/router"; 
 
 const Login = () => {
   const [email, setEmail] = useState<string>("")
   const [password, setPassword] = useState<string>("")
+  const router = useRouter();
   const onSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     console.log(email, password)
     axios.post("/api/login", {
       email, password
-    }).then(res => console.log(res)).catch(err => console.log(err))
+    })
+    .then((res) =>  {
+      console.log(res);
+      router.push('/hotel/search');
+    })
+    .catch(err => console.log(err))
   }
   return (
     <section className="text-gray-600 body-font relative bg-[#edf5ff] h-[100vh]">
       <div className="flex justify-center items-center h-full">
         <div className="flex flex-col  w-[40%] mb-12 mx-auto  bg-white px-10 py-20">
-          <h1 className="pb-5 text-center text-black">login Form</h1>
+          <h1 className="pb-5 text-center text-black">Login</h1>
           <form onSubmit={onSubmit}>
             <div className="mb-6">
               <label htmlFor="email" className="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Your email</label>

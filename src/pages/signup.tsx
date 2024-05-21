@@ -3,8 +3,8 @@
  */
 import Signup from "@/components/Signup";
 
-const page = () => {
+const signup = () => {
   return <Signup />
 };
 
-export default page;
+export default signup;
