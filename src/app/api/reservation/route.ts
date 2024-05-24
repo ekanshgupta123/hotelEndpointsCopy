@@ -91,11 +91,11 @@ interface Orders {
 const formData = new FormData();
 formData.append('name', 'Vimal Kohli');
 
-export async function GET(): Promise<object> {
+export async function GET(): Promise<void> {
     try {
         const userName = formData.get('name')?.toString().toLowerCase()
-        console.log(userName)
         const credentials = `${process.env['KEY_ID']}:${process.env['API_KEY']}`;
+        console.log(credentials)
         const authHeader = 'Basic ' + Buffer.from(credentials).toString('base64');
         const headers = new Headers({
             'Authorization': `${authHeader}`, 
@@ -136,11 +136,9 @@ export async function GET(): Promise<object> {
             }
         }
         console.log(storeArray.length);
-        return new Response("Done");
         //return NextResponse.json(storeArray);
     } catch (e) {
         console.error(e);
-        return new Response("Error")
         //return NextResponse.json({ error: e })
     }
 }
