@@ -94,7 +94,6 @@ interface Orders {
 export async function POST(req: FormData): Promise<object> {
     try {
         const userName = req.get('name')?.toString().toLowerCase()
-        console.log(userName)
         const credentials = `${process.env['KEY_ID']}:${process.env['API_KEY']}`;
         const authHeader = 'Basic ' + Buffer.from(credentials).toString('base64');
         const headers = new Headers({

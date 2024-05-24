@@ -188,7 +188,7 @@ const Reservation: React.FC = () => {
             setHotel(foundHotel || null);
             const formData = new FormData()
             formData.append('name', dummyUser.name)
-            fetch("/Users/vijayrakeshchandra/Desktop/previous/api_endpoint/Hotel-Booking-Checkin/src/app/api/reservation/", {
+            fetch("/api/reservation", {
                 method: "POST",
                 body: formData
             }).then(res => {
