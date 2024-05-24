@@ -135,11 +135,13 @@ export async function GET(): Promise<object> {
                 storeArray.push(order);
             }
         }
-        console.log(storeArray.length)
-        return NextResponse.json(storeArray);
+        console.log(storeArray.length);
+        return new Response("Done");
+        //return NextResponse.json(storeArray);
     } catch (e) {
         console.error(e);
-        return NextResponse.json({ error: e })
+        return new Response("Error")
+        //return NextResponse.json({ error: e })
     }
 }
 
