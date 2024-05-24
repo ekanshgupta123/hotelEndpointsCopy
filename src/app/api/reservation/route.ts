@@ -1,5 +1,5 @@
 import dotenv from 'dotenv';
-// import fs from 'fs';
+import { NextResponse } from "next/server";
 
 dotenv.config({ path: __dirname + '/.env' });
 
@@ -88,9 +88,13 @@ interface Orders {
     orders: Array<Components> 
 }
 
+//const formData = new FormData();
+// formData.append('name', 'Vimal Kohli');
+
 export async function POST(req: FormData): Promise<object> {
     try {
         const userName = req.get('name')?.toString().toLowerCase()
+        console.log(userName)
         const credentials = `${process.env['KEY_ID']}:${process.env['API_KEY']}`;
         const authHeader = 'Basic ' + Buffer.from(credentials).toString('base64');
         const headers = new Headers({
@@ -131,10 +135,11 @@ export async function POST(req: FormData): Promise<object> {
                 storeArray.push(order);
             }
         }
-        return {'result': storeArray};
+        console.log(storeArray.length)
+        return NextResponse.json(storeArray);
     } catch (e) {
         console.error(e);
-        return {}
+        return NextResponse.json({ error: e })
     }
 }
 
