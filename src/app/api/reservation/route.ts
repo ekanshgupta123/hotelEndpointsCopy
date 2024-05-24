@@ -1,7 +1,6 @@
 import dotenv from 'dotenv';
-import { NextResponse } from "next/server";
-
 dotenv.config({ path: __dirname + '/.env' });
+import { NextResponse } from "next/server";
 
 interface Guests {
     age: null,
@@ -91,11 +90,10 @@ interface Orders {
 const formData = new FormData();
 formData.append('name', 'Vimal Kohli');
 
-export async function GET(): Promise<void> {
+export async function GET(): Promise<object> {
     try {
         const userName = formData.get('name')?.toString().toLowerCase()
-        const credentials = `${process.env['KEY_ID']}:${process.env['API_KEY']}`;
-        console.log(credentials)
+        const credentials = `${process.env.KEY_ID}:${process.env.API_KEY}`;
         const authHeader = 'Basic ' + Buffer.from(credentials).toString('base64');
         const headers = new Headers({
             'Authorization': `${authHeader}`, 
@@ -135,13 +133,24 @@ export async function GET(): Promise<void> {
                 storeArray.push(order);
             }
         }
-        console.log(storeArray.length);
-        //return NextResponse.json(storeArray);
+        return NextResponse.json(storeArray);
     } catch (e) {
         console.error(e);
-        //return NextResponse.json({ error: e })
+        return NextResponse.json({ error: e })
     }
 }
 
 // git add .
 // git commit -m "Any message - what you have done since your last commit"
+/* Error: DefinePlugin
+Conflicting values for 'process.env.__NEXT_OPTIMIZE_FONTS'
+
+DefinePlugin
+Conflicting values for 'process.env.__NEXT_OPTIMIZE_FONTS'
+
+DefinePlugin
+Conflicting values for 'process.env.NEXT_RUNTIME'
+
+DefinePlugin
+Conflicting values for 'process.env.__NEXT_OPTIMIZE_FONTS'
+*/
