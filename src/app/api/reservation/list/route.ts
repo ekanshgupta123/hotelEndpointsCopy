@@ -87,12 +87,9 @@ interface Orders {
     orders: Array<Components> 
 }
 
-const formData = new FormData();
-formData.append('name', 'Vimal Kohli');
-
-export async function GET(): Promise<object> {
+export async function GET(req: FormData): Promise<object> {
     try {
-        const userName = formData.get('name')?.toString().toLowerCase()
+        const userName = req.get('name')?.toString().toLowerCase()
         const credentials = `${process.env.KEY_ID}:${process.env.API_KEY}`;
         const authHeader = 'Basic ' + Buffer.from(credentials).toString('base64');
         const headers = new Headers({
@@ -119,7 +116,7 @@ export async function GET(): Promise<object> {
             const guestInfo = order.rooms_data[0].guest_data.guests[0];
             return `${guestInfo.first_name} ${guestInfo.last_name}`.toLowerCase();
         }
-        let storeArray: Components[] = [];
+        let output: Components[] = [];
         const retrieve = await fetch("https://api.worldota.net/api/b2b/v3/hotel/order/info/", {
             method: "POST",
             headers: headers,
@@ -130,10 +127,10 @@ export async function GET(): Promise<object> {
         for await (const order of records.orders) {
             const fullName = formName(order);
             if (fullName == userName) {
-                storeArray.push(order);
+                output.push(order);
             }
         }
-        return NextResponse.json(storeArray);
+        return NextResponse.json(output);
     } catch (e) {
         console.error(e);
         return NextResponse.json({ error: e })

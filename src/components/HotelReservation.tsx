@@ -179,8 +179,8 @@ interface Components {
 const Reservation: React.FC = () => {
     const router = useRouter();
     const { id } = router.query;
-    const [hotel, setHotel] = useState<HotelProperty | null>(dummyHotelProperties[0]);
-    const [result, setResult] = useState<Components[] | null>(null);
+    const [hotel, setHotel] = useState<HotelProperty | null>(null);
+    const [result, setResult] = useState<Components[] | Components | null>(null);
 
     useEffect(() => {
         if (id) {
@@ -188,11 +188,15 @@ const Reservation: React.FC = () => {
             setHotel(foundHotel || null);
             const formData = new FormData()
             formData.append('name', dummyUser.name)
-            fetch("/api/reservation", {
+            const routing
+            const toGo =  `/api/reservation/${routing}`
+            fetch(toGo, {
                 method: "POST",
                 body: formData
             }).then(res => {
-                console.log(res);
+                return res.json();
+            }).then(data => {
+                setResult(data.output)
             }).catch(err => console.log(err))
         }
     }, [id]);
