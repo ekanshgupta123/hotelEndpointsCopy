@@ -91,9 +91,10 @@ interface Orders {
 //const formData = new FormData();
 // formData.append('name', 'Vimal Kohli');
 
-export async function POST(req: FormData): Promise<object> {
+export async function GET(): Promise<object> {
+    return new Response("Hello World!")
     try {
-        const userName = req.get('name')?.toString().toLowerCase()
+        //const userName = req.get('name')?.toString().toLowerCase()
         const credentials = `${process.env['KEY_ID']}:${process.env['API_KEY']}`;
         const authHeader = 'Basic ' + Buffer.from(credentials).toString('base64');
         const headers = new Headers({
@@ -130,7 +131,7 @@ export async function POST(req: FormData): Promise<object> {
         const records: Orders = await newData.data;
         for await (const order of records.orders) {
             const fullName = formName(order);
-            if (fullName == userName) {
+            if (fullName == "userName") {
                 storeArray.push(order);
             }
         }
