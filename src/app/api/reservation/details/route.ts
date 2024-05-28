@@ -1,6 +1,5 @@
 import dotenv from 'dotenv';
-dotenv.config({ path: __dirname + '/.env' });
-import { NextResponse } from "next/server";
+dotenv.config({ path: "/Users/vijayrakeshchandra/Desktop/previous/api_endpoint/Hotel-Booking-Checkin/src/app/api/reservation/.env" });
 
 interface Guests {
     age: null,
@@ -84,24 +83,61 @@ interface Components {
   }
 
 interface Orders {
+    order_id: number,
     orders: Array<Components> 
 }
 
-const formData = new FormData();
-formData.append('name', "Weeknd");
-
-(async function GET(req: FormData): Promise<object> {
+export async function POST(req: Request): Promise<object> {
     try {
-        await fetch("/api/reservation/list", {
-            method: "GET",
-            body: req
-        }).then(res => res.json()).then(data => console.log(data.output))
-        return {}
+        const body = await req.json()
+        const userName = await body.name.toLowerCase()
+        const hotelID = await body.hotel
+        const credentials = `${process.env.KEY_ID}:${process.env.API_KEY}`;
+        const authHeader = 'Basic ' + Buffer.from(credentials).toString('base64');
+        const headers = new Headers({
+            'Authorization': `${authHeader}`, 
+            'Content-Type': 'application/json'
+            });
+        const bodyData = {
+            "ordering": {
+                "ordering_type": "desc",
+                "ordering_by": "created_at"
+            },
+            "pagination": {
+                "page_size": "50",
+                "page_number": "1"
+            }, 
+            "search": {
+                "created_at": {
+                  "from_date": "2023-12-31T00:00"
+                }
+            },
+          "language":"en"
+        };
+        const formName = (order: Components): string => {
+            const guestInfo = order.rooms_data[0].guest_data.guests[0];
+            return `${guestInfo.first_name} ${guestInfo.last_name}`.toLowerCase();
+        }
+        let output;
+        const retrieve: Response = await fetch("https://api.worldota.net/api/b2b/v3/hotel/order/info/", {
+            method: "POST",
+            headers: headers,
+            body: JSON.stringify(bodyData)
+        });
+        const newData = await retrieve.json();
+        const records: Orders = await newData.data;
+        for await (const order of records.orders) {
+            const fullName = formName(order);
+            if (fullName == userName && order.invoice_id == hotelID) {
+                output = order;
+            } 
+        }
+        return new Response(JSON.stringify({ result: output }));
     } catch (e) {
         console.error(e);
-        return {}
+        return new Response(JSON.stringify({ result: e }));
     }
-})(formData)
+}
 
 // git add .
 // git commit -m "Any message - what you have done since your last commit"

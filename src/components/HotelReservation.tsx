@@ -1,9 +1,7 @@
-"use client"
 import { useRouter } from 'next/router';
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import '../styles/App.css';
 
-// Define the types for the hotel properties and rooms
 interface Room {
     id: number;
     type: string;
@@ -175,82 +173,76 @@ interface Components {
     user_data: { arrival_datetime: null, email: string, user_comment: null }
   }
 
-
 const Reservation: React.FC = () => {
     const router = useRouter();
     const { id } = router.query;
-    const [hotel, setHotel] = useState<HotelProperty | null>(null);
-    const [result, setResult] = useState<Components[] | Components | null>(null);
+    let hasRendered = false;
+    const [hotel, setHotel] = useState<string | null>(null);
+    const [reservations, setReservations] = useState<Components[] | null>(null);
+    const [details, setDetails] = useState<Components | null>(null);
 
     useEffect(() => {
-        if (id) {
-            const foundHotel = dummyHotelProperties.find(hotel => hotel.id === parseInt(id as string));
-            setHotel(foundHotel || null);
-            const formData = new FormData()
-            formData.append('name', dummyUser.name)
-            const routing
-            const toGo =  `/api/reservation/${routing}`
-            fetch(toGo, {
-                method: "POST",
-                body: formData
-            }).then(res => {
-                return res.json();
-            }).then(data => {
-                setResult(data.output)
-            }).catch(err => console.log(err))
+        const apiCall = async (): Promise<void> => {
+            try {
+                const res = await fetch("/api/reservation/list", {
+                    method: "POST",
+                    body: JSON.stringify({ name: dummyUser.name })
+                })
+                const data = await res.json()
+                setReservations(data.result)
+            } catch (e) {
+                console.error(e)
+            }
         }
-    }, [id]);
+        if (!hasRendered) {
+            apiCall();
+            hasRendered = true;
+        }
+    }, [])
 
-    if (!hotel) {
+    useEffect(() => {
+        const reservationLookup = async (): Promise<void> => {
+            if (hotel) {
+                try {
+                    const res = await fetch("/api/reservation/details", {
+                        method: "POST",
+                        body: JSON.stringify({ hotel: hotel, name: dummyUser.name })
+                    })
+                    const data = await res.json()
+                    setDetails(data.result)
+                } catch (e) {
+                    console.error(e);
+                }
+            }
+        }
+        reservationLookup();
+    }, [hotel])
+
+    if (!reservations) {
         return <div>Loading...</div>;
+    }
+
+    const handleViewItinerary = (ID: typeof id) => {
+        const objectString = JSON.stringify(details)
+        router.push(`/hotel/details/${ID}?details=${encodeURIComponent(objectString)}`)
     }
 
     return (
         <div className="reservation-container">
-            <div className="hotel-summary">
-                <img src={hotel.image} alt={hotel.title} className="hotel-image" />
-                <div>
-                    <h1>{hotel.title}</h1>
-                    <p>{hotel.address}</p>
-                    <p>{hotel.roomType}</p>
-                    <p>Check In: {hotel.checkIn}</p>
-                    <p>Check Out: {hotel.checkOut}</p>
-                    <p>Booking for: {hotel.bookingFor}</p>
+            {reservations.map(order => (
+                <div key={order.order_id}>
+                    <label className='label-div'>Guest: {dummyUser.name}</label>
+                    <label className='label-div'>In: {order.checkin_at}</label>
+                    <label className='label-div'>Out: {order.checkout_at}</label>
+                    <button className='label-div' onClick={() => setHotel(order.invoice_id)}>Hotel: {order.hotel_data.id}</button>
+                    <label className='label-div'>Nights: {order.nights}</label>
                 </div>
-            </div>
-            <div className="price-summary">
-                <h2>Price Summary</h2>
-                <p>Regular Price: ${hotel.regularPrice}</p>
-                <p>Discounted Price: ${hotel.discountedPrice}</p>
-                <p>Savings: ${hotel.savings}</p>
-                <p>Taxes & Fees: ${hotel.taxesFees}</p>
-                <h3>Total: ${hotel.discountedPrice + hotel.taxesFees}</h3>
-            </div>
-            <div className="payment-form">
-                <h2>Payment Information</h2>
-                <form>
-                    <div>
-                        <label>Card Number</label>
-                        <input type="text" name="cardNumber" placeholder="1234 1234 1234 1234" />
-                    </div>
-                    <div>
-                        <label>Expiration Date</label>
-                        <input type="text" name="expirationDate" placeholder="MM / YY" />
-                    </div>
-                    <div>
-                        <label>CVC</label>
-                        <input type="text" name="cvc" placeholder="CVC" />
-                    </div>
-                    <div>
-                        <label>Country</label>
-                        <input type="text" name="country" placeholder="United States" />
-                    </div>
-                    <div>
-                        <label>ZIP</label>
-                        <input type="text" name="zip" placeholder="12345" />
-                    </div>
-                    <button type="submit" className="pay-now-button">Pay Now</button>
-                </form>
+            ))}
+            <div>{details?.hotel_data.id}</div>
+            <div>{details?.checkin_at}</div>
+            <div>{details?.checkout_at}</div>
+            <div>
+                <button onClick={() => handleViewItinerary(id || "some_id")}>View Full Itinerary</button>
             </div>
         </div>
     );

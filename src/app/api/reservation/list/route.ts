@@ -1,6 +1,5 @@
 import dotenv from 'dotenv';
-dotenv.config({ path: __dirname + '/.env' });
-import { NextResponse } from "next/server";
+dotenv.config({ path: "/Users/vijayrakeshchandra/Desktop/previous/api_endpoint/Hotel-Booking-Checkin/src/app/api/reservation/.env" });
 
 interface Guests {
     age: null,
@@ -87,9 +86,10 @@ interface Orders {
     orders: Array<Components> 
 }
 
-export async function GET(req: FormData): Promise<object> {
+export async function POST(req: Request): Promise<object> {
     try {
-        const userName = req.get('name')?.toString().toLowerCase()
+        const body = await req.json()
+        const userName = await body.name.toLowerCase()
         const credentials = `${process.env.KEY_ID}:${process.env.API_KEY}`;
         const authHeader = 'Basic ' + Buffer.from(credentials).toString('base64');
         const headers = new Headers({
@@ -117,7 +117,7 @@ export async function GET(req: FormData): Promise<object> {
             return `${guestInfo.first_name} ${guestInfo.last_name}`.toLowerCase();
         }
         let output: Components[] = [];
-        const retrieve = await fetch("https://api.worldota.net/api/b2b/v3/hotel/order/info/", {
+        const retrieve: Response = await fetch("https://api.worldota.net/api/b2b/v3/hotel/order/info/", {
             method: "POST",
             headers: headers,
             body: JSON.stringify(bodyData)
@@ -130,10 +130,10 @@ export async function GET(req: FormData): Promise<object> {
                 output.push(order);
             }
         }
-        return NextResponse.json(output);
+        return new Response(JSON.stringify({ result: output }));
     } catch (e) {
         console.error(e);
-        return NextResponse.json({ error: e })
+        return new Response(JSON.stringify({ result: e }));
     }
 }
 
