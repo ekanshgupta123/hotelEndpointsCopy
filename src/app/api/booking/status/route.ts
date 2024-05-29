@@ -21,6 +21,15 @@ const headers = new Headers({
     'Content-Type': 'application/json'
     });
 
-(async function () {
-    return
-})
+export async function POST(req: Request): Promise<Response> {
+    const data = await req.json()
+    const pID = await data.pid
+    const statusResponse: Response = await fetch("https://api.worldota.net/api/b2b/v3/hotel/order/booking/finish/status/", {
+        method: "POST",
+        headers: headers,
+        body: JSON.stringify({ "partner_order_id": pID })
+    });
+    const statusWait = await statusResponse.json();
+    const statusCode: string = await statusWait.status
+    return new Response(JSON.stringify({ result: statusCode }))
+}

@@ -1,4 +1,6 @@
 import dotenv from 'dotenv';
+import { NextResponse } from 'next/server';
+import { NextApiResponse } from 'next';
 dotenv.config({ path: "/Users/vijayrakeshchandra/Desktop/previous/api_endpoint/Hotel-Booking-Checkin/src/app/api/reservation/.env" });
 
 interface Guests {
@@ -87,17 +89,17 @@ interface Orders {
     orders: Array<Components> 
 }
 
-export async function POST(req: Request): Promise<object> {
+const credentials = `${process.env.KEY_ID}:${process.env.API_KEY}`;
+const authHeader = 'Basic ' + Buffer.from(credentials).toString('base64');
+const headers = new Headers({
+    'Authorization': `${authHeader}`, 
+    'Content-Type': 'application/json'
+    });
+
+export async function POST(req: Request): Promise<NextResponse> {
     try {
         const body = await req.json()
-        const userName = await body.name.toLowerCase()
-        const hotelID = await body.hotel
-        const credentials = `${process.env.KEY_ID}:${process.env.API_KEY}`;
-        const authHeader = 'Basic ' + Buffer.from(credentials).toString('base64');
-        const headers = new Headers({
-            'Authorization': `${authHeader}`, 
-            'Content-Type': 'application/json'
-            });
+        const { name, hotel } = body;
         const bodyData = {
             "ordering": {
                 "ordering_type": "desc",
@@ -114,11 +116,6 @@ export async function POST(req: Request): Promise<object> {
             },
           "language":"en"
         };
-        const formName = (order: Components): string => {
-            const guestInfo = order.rooms_data[0].guest_data.guests[0];
-            return `${guestInfo.first_name} ${guestInfo.last_name}`.toLowerCase();
-        }
-        let output;
         const retrieve: Response = await fetch("https://api.worldota.net/api/b2b/v3/hotel/order/info/", {
             method: "POST",
             headers: headers,
@@ -126,18 +123,17 @@ export async function POST(req: Request): Promise<object> {
         });
         const newData = await retrieve.json();
         const records: Orders = await newData.data;
-        for await (const order of records.orders) {
-            const fullName = formName(order);
-            if (fullName == userName && order.invoice_id == hotelID) {
-                output = order;
-            } 
-        }
-        return new Response(JSON.stringify({ result: output }));
+        const single = records.orders.filter((order) => {
+            const guestInfo = order.rooms_data[0].guest_data.guests[0];
+            return name.toLowerCase() == `${guestInfo.first_name} ${guestInfo.last_name}`.toLowerCase() && order.invoice_id == hotel;
+        })[0]
+        return NextResponse.json({ single }, { status: 200 })
     } catch (e) {
         console.error(e);
-        return new Response(JSON.stringify({ result: e }));
+        return NextResponse.json({ error: e }, { status: 200 })
     }
 }
 
 // git add .
 // git commit -m "Any message - what you have done since your last commit"
+// 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

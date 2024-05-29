@@ -1,85 +1,9 @@
 import { useRouter } from 'next/router';
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
+import { NextResponse } from 'next/server';
+import axios from 'axios'
 import '../styles/App.css';
-
-interface Room {
-    id: number;
-    type: string;
-    occupancy: string;
-    bed: string;
-    price: string;
-    cancellationPolicy: string;
-    image: string;
-}
-
-interface HotelProperty {
-    id: number;
-    title: string;
-    price: string;
-    image: string;
-    description: string;
-    address: string;
-    roomType: string;
-    checkIn: string;
-    checkOut: string;
-    bookingFor: string;
-    regularPrice: number;
-    discountedPrice: number;
-    savings: number;
-    taxesFees: number;
-    rooms: Room[];
-}
-
-// GuestData --> first_name, checkin_at, checkout_at, location, # of rooms, price
-
-const dummyHotelProperties: HotelProperty[] = [
-    {
-        id: 1,
-        title: 'Hotel Sunshine',
-        price: '$100 per night',
-        image: 'https://via.placeholder.com/150',
-        description: 'A wonderful place to stay with beautiful sunshine.',
-        address: '1047 5th Ave, San Diego',
-        roomType: 'Premium, 2 Double',
-        checkIn: 'Sat, 20 Jan 2024',
-        checkOut: 'Sat, 27 Jan 2024',
-        bookingFor: '7 nights, 1 adult',
-        regularPrice: 2274,
-        discountedPrice: 1696,
-        savings: 628,
-        taxesFees: 232,
-        rooms: [
-            {
-                id: 1,
-                type: 'Superior',
-                occupancy: 'Sleeps 2',
-                bed: '1 Queen Bed and 1 Sofa Bed (or Twin Bed)',
-                price: '$367',
-                cancellationPolicy: 'Fully Refundable Before January 8',
-                image: 'https://via.placeholder.com/300'
-            },
-            {
-                id: 2,
-                type: 'Premier',
-                occupancy: 'Sleeps 2',
-                bed: '1 Double Bed',
-                price: '$375',
-                cancellationPolicy: 'Fully Refundable Before January 10',
-                image: 'https://via.placeholder.com/300'
-            },
-            {
-                id: 3,
-                type: 'Suite, 1 Bedroom',
-                occupancy: 'Sleeps 2',
-                bed: '1 Double Bed',
-                price: '$383',
-                cancellationPolicy: 'Fully Refundable Before January 10',
-                image: 'https://via.placeholder.com/300'
-            }
-        ]
-    }
-    // Add more dummy hotels as needed
-];
+import { NextApiResponse } from 'next';
 
 interface UserInter {
     name: string,
@@ -176,7 +100,7 @@ interface Components {
 const Reservation: React.FC = () => {
     const router = useRouter();
     const { id } = router.query;
-    let hasRendered = false;
+    const [rendered, setRendered] = useState<boolean>(false)
     const [hotel, setHotel] = useState<string | null>(null);
     const [reservations, setReservations] = useState<Components[] | null>(null);
     const [details, setDetails] = useState<Components | null>(null);
@@ -184,19 +108,18 @@ const Reservation: React.FC = () => {
     useEffect(() => {
         const apiCall = async (): Promise<void> => {
             try {
-                const res = await fetch("/api/reservation/list", {
-                    method: "POST",
-                    body: JSON.stringify({ name: dummyUser.name })
+                const response = await axios.post('/api/reservation/details', {
+                    name: dummyUser.name
                 })
-                const data = await res.json()
-                setReservations(data.result)
+                const { multiple } = response.data
+                setReservations(multiple)
             } catch (e) {
                 console.error(e)
             }
         }
-        if (!hasRendered) {
+        if (!rendered) {
             apiCall();
-            hasRendered = true;
+            setRendered(true);
         }
     }, [])
 
@@ -204,12 +127,11 @@ const Reservation: React.FC = () => {
         const reservationLookup = async (): Promise<void> => {
             if (hotel) {
                 try {
-                    const res = await fetch("/api/reservation/details", {
-                        method: "POST",
-                        body: JSON.stringify({ hotel: hotel, name: dummyUser.name })
+                    const response = await axios.post('/api/reservation/details', {
+                        hotel: hotel, name: dummyUser.name
                     })
-                    const data = await res.json()
-                    setDetails(data.result)
+                    const { single } = response.data
+                    setDetails(single)
                 } catch (e) {
                     console.error(e);
                 }

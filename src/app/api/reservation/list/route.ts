@@ -1,4 +1,5 @@
 import dotenv from 'dotenv';
+import { NextResponse } from 'next/server';
 dotenv.config({ path: "/Users/vijayrakeshchandra/Desktop/previous/api_endpoint/Hotel-Booking-Checkin/src/app/api/reservation/.env" });
 
 interface Guests {
@@ -86,10 +87,10 @@ interface Orders {
     orders: Array<Components> 
 }
 
-export async function POST(req: Request): Promise<object> {
+export async function POST(req: Request): Promise<NextResponse> {
     try {
         const body = await req.json()
-        const userName = await body.name.toLowerCase()
+        const { name } = body;
         const credentials = `${process.env.KEY_ID}:${process.env.API_KEY}`;
         const authHeader = 'Basic ' + Buffer.from(credentials).toString('base64');
         const headers = new Headers({
@@ -112,11 +113,6 @@ export async function POST(req: Request): Promise<object> {
             },
           "language":"en"
         };
-        const formName = (order: Components): string => {
-            const guestInfo = order.rooms_data[0].guest_data.guests[0];
-            return `${guestInfo.first_name} ${guestInfo.last_name}`.toLowerCase();
-        }
-        let output: Components[] = [];
         const retrieve: Response = await fetch("https://api.worldota.net/api/b2b/v3/hotel/order/info/", {
             method: "POST",
             headers: headers,
@@ -124,16 +120,14 @@ export async function POST(req: Request): Promise<object> {
         });
         const newData = await retrieve.json();
         const records: Orders = await newData.data;
-        for await (const order of records.orders) {
-            const fullName = formName(order);
-            if (fullName == userName) {
-                output.push(order);
-            }
-        }
-        return new Response(JSON.stringify({ result: output }));
+        const multiple: Components[] = records.orders.filter((order) => {
+            const guestInfo = order.rooms_data[0].guest_data.guests[0];
+            return name.toLowerCase() == `${guestInfo.first_name} ${guestInfo.last_name}`.toLowerCase();
+        })
+        return NextResponse.json({ multiple }, { status: 200 });
     } catch (e) {
         console.error(e);
-        return new Response(JSON.stringify({ result: e }));
+        return NextResponse.json({ error: e }, { status: 500 });
     }
 }
 
