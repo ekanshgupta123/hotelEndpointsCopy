@@ -136,4 +136,3 @@ export async function POST(req: Request): Promise<NextResponse> {
 
 // git add .
 // git commit -m "Any message - what you have done since your last commit"
-// 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
