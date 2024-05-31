@@ -1,10 +1,11 @@
 "use client";
+import Navbar from '@/components/Navbar'
 
 const Home = () => {
   return (
-    <h1>
-    Home Page
-    </h1>
+    <div>
+      <Navbar />
+    </div>
   )
 };
 

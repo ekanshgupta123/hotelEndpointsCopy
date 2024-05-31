@@ -1,20 +1,8 @@
 import { useRouter } from 'next/router';
 import React, { useState, useEffect } from 'react';
-import { NextResponse } from 'next/server';
 import axios from 'axios'
 import '../styles/App.css';
-import { NextApiResponse } from 'next';
-
-interface UserInter {
-    name: string,
-    email: string,
-    password: string
-}
-const dummyUser: UserInter = {
-    name: "Vimal Kohli",
-    email: "vimal@checkins.ai",
-    password: "xyz"
-}
+import Navbar from './Navbar'
 
 interface Guests {
     age: null,
@@ -102,17 +90,19 @@ const Reservation: React.FC = () => {
     const { id } = router.query;
     const [rendered, setRendered] = useState<boolean>(false)
     const [hotel, setHotel] = useState<string | null>(null);
+    const [user, setUser] = useState<string | null>(null)
     const [reservations, setReservations] = useState<Components[] | null>(null);
     const [details, setDetails] = useState<Components | null>(null);
+    const [retrieving, setRetrieving] = useState<boolean>(false)
+    const [scale, setScale] = useState<boolean>(false)
 
     useEffect(() => {
         const apiCall = async (): Promise<void> => {
             try {
-                const response = await axios.post('/api/reservation/details', {
-                    name: dummyUser.name
-                })
-                const { multiple } = response.data
-                setReservations(multiple)
+                const response = await axios.post('/api/reservation/list')
+                const { multiple, userName } = response.data
+                setReservations(multiple);
+                setUser(userName);
             } catch (e) {
                 console.error(e)
             }
@@ -128,10 +118,11 @@ const Reservation: React.FC = () => {
             if (hotel) {
                 try {
                     const response = await axios.post('/api/reservation/details', {
-                        hotel: hotel, name: dummyUser.name
+                        hotel: hotel, name: user
                     })
-                    const { single } = response.data
-                    setDetails(single)
+                    const { single } = response.data;
+                    setDetails(single);
+                    setRetrieving(false);
                 } catch (e) {
                     console.error(e);
                 }
@@ -149,24 +140,96 @@ const Reservation: React.FC = () => {
         router.push(`/hotel/details/${ID}?details=${encodeURIComponent(objectString)}`)
     }
 
+    const sideItinerary = () => {
+        if (details) {
+            return (
+                <div>
+                    <h3>Trip Details:</h3>
+                    <div className='itin-items'>
+                        <p>Hotel:</p>
+                        <p>{details.hotel_data.id.replace(/_/g, ' ').replace(/\b\w/g, (char) => char.toUpperCase())}</p>
+                    </div>
+                    <div className='itin-items'>
+                        <p>Check In:</p>
+                        <p>{details.checkin_at}</p>
+                    </div>
+                    <div className='itin-items'>
+                        <p>Check Out:</p>
+                        <p>{details.checkin_at}</p>
+                    </div> 
+                    <div className='itin-items'>
+                        <p>Nights:</p>
+                        <p>{details.nights}</p>
+                    </div> 
+                    <div className='itin-items'>
+                        <p>Booked By:</p>
+                        <p>{details.payment_data.payment_by || user}</p>
+                    </div> 
+                    <h3>Room Information</h3>
+                    <div className='itin-items'>
+                        <p>Order ID:</p>
+                        <p>{details.order_id}</p>
+                    </div> 
+                    <div className='itin-items'>
+                        <p>Room Type:</p>
+                        <p>{details.rooms_data[0].bedding_name[0][0].toUpperCase() + details.rooms_data[0].bedding_name[0].substring(1)}</p>
+                    </div> 
+                    <div className='itin-items'>
+                        <p>Room Name:</p>
+                        <p>{details.rooms_data[0].room_name.split('(')[0].trim().split(/\s+/).slice(0, 4).join(' ')}</p>
+                    </div> 
+                    <div className='itin-items'>
+                        <p>Email:</p>
+                        <p>{details.user_data.email}</p>
+                    </div> 
+                    <div className='itin-items'>
+                        <p>Price:</p>
+                        <p>{`$${details.amount_payable.amount}`}</p>
+                    </div> 
+                </div>  
+            )
+        } else if (!details && retrieving) {
+            return <p>Loading...</p>
+        } 
+    }
     return (
-        <div className="reservation-container">
-            {reservations.map(order => (
-                <div key={order.order_id}>
-                    <label className='label-div'>Guest: {dummyUser.name}</label>
-                    <label className='label-div'>In: {order.checkin_at}</label>
-                    <label className='label-div'>Out: {order.checkout_at}</label>
-                    <button className='label-div' onClick={() => setHotel(order.invoice_id)}>Hotel: {order.hotel_data.id}</button>
-                    <label className='label-div'>Nights: {order.nights}</label>
+        <>
+            <header><Navbar /></header>
+            <div className={`reservation-container ${scale ? 'scale' : ''}`}>
+                <div className='above-columns'>
+                    <label className='guest-label'>Guests</label>
+                    <label className='in-label'>In</label>
+                    <label className='out-label'>Out</label>
+                    <label className='hotel-label'>Hotel</label>
+                    <label className='nights-label'>Nights</label>
                 </div>
-            ))}
-            <div>{details?.hotel_data.id}</div>
-            <div>{details?.checkin_at}</div>
-            <div>{details?.checkout_at}</div>
-            <div>
-                <button onClick={() => handleViewItinerary(id || "some_id")}>View Full Itinerary</button>
+                {reservations.map(order => (
+                    <div className='columns'>
+                        <label>{user}</label>
+                        <label style={{ marginRight: '20px', maxWidth: '100px' }}>{new Date(order.checkin_at).toDateString()}</label>
+                        <label style={{ marginRight: '10px', maxWidth: '100px' }}>{new Date(order.checkout_at).toDateString()}</label>
+                        <button className='button-specific' onClick={function () {
+                            setHotel(order.invoice_id);
+                            setScale(true);
+                            setRetrieving(true);
+                        }}>{order.hotel_data.id.replace(/_/g, ' ').replace(/\b\w/g, (char) => char.toUpperCase())}</button>
+                        <label style={{ maxWidth: '5px' }}>{order.nights}</label>
+                    </div>
+                ))}
             </div>
-        </div>
+            {scale && 
+            <div className='itin-tag'>
+                <div style={{ marginTop: '30%' }}>{sideItinerary() || <p>No Hotel Selected</p>}</div>
+                <button onClick={() => setScale(false)} style={{ marginTop: '5%' }}>Close Itinerary</button>
+                <button onClick={() => handleViewItinerary(id || "")}>View Full Itinerary</button>
+            </div>
+            }
+            <div>
+                <div>
+                    <button onClick={() => setScale(true)}>Toggle Side Itinerary</button>
+                </div>
+            </div>
+        </>
     );
 };
 

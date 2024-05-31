@@ -13,8 +13,8 @@ import User from "@/Models/userModels";
 import connection from "@/db/config";
 import { NextResponse } from "next/server";
 import bcrypt from 'bcrypt';
-import jwt from 'jsonwebtoken'
 import crypto from 'crypto'
+import jwt from 'jsonwebtoken'
 const salt = 10;
 export async function POST(req: Request) {
     const body = await req.json();
@@ -31,7 +31,7 @@ export async function POST(req: Request) {
     try {
         let user = new User({ email, password: hashPassword, name });
         const res = await user.save();
-        const privateKey = crypto.randomUUID();
+        const privateKey = "1234";
         const token = jwt.sign({ email, name }, privateKey)
         const response = NextResponse.json({ mgs: "ok", success: true }, { status: 201 })
         response.cookies.set("token", token, {

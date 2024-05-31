@@ -1,5 +1,7 @@
 import dotenv from 'dotenv';
-import { NextResponse } from 'next/server';
+import { NextResponse, NextRequest } from 'next/server';
+import jwt from 'jsonwebtoken'
+import crypto from 'crypto'
 dotenv.config({ path: "/Users/vijayrakeshchandra/Desktop/previous/api_endpoint/Hotel-Booking-Checkin/src/app/api/reservation/.env" });
 
 interface Guests {
@@ -87,10 +89,16 @@ interface Orders {
     orders: Array<Components> 
 }
 
-export async function POST(req: Request): Promise<NextResponse> {
+export async function POST(req: NextRequest): Promise<NextResponse> {
     try {
-        const body = await req.json()
-        const { name } = body;
+        const jwtToken = req.cookies.get("token")?.value 
+        let userName: string = "";
+        if (jwtToken) {
+            const decoded = jwt.decode(jwtToken)
+            if (typeof decoded == 'object' && decoded) {
+                userName = decoded.name
+            }
+        }
         const credentials = `${process.env.KEY_ID}:${process.env.API_KEY}`;
         const authHeader = 'Basic ' + Buffer.from(credentials).toString('base64');
         const headers = new Headers({
@@ -122,9 +130,9 @@ export async function POST(req: Request): Promise<NextResponse> {
         const records: Orders = await newData.data;
         const multiple: Components[] = records.orders.filter((order) => {
             const guestInfo = order.rooms_data[0].guest_data.guests[0];
-            return name.toLowerCase() == `${guestInfo.first_name} ${guestInfo.last_name}`.toLowerCase();
+            return userName.toLowerCase() == `${guestInfo.first_name} ${guestInfo.last_name}`.toLowerCase();
         })
-        return NextResponse.json({ multiple }, { status: 200 });
+        return NextResponse.json({ multiple, userName }, { status: 200 });
     } catch (e) {
         console.error(e);
         return NextResponse.json({ error: e }, { status: 500 });
@@ -133,15 +141,3 @@ export async function POST(req: Request): Promise<NextResponse> {
 
 // git add .
 // git commit -m "Any message - what you have done since your last commit"
-/* Error: DefinePlugin
-Conflicting values for 'process.env.__NEXT_OPTIMIZE_FONTS'
-
-DefinePlugin
-Conflicting values for 'process.env.__NEXT_OPTIMIZE_FONTS'
-
-DefinePlugin
-Conflicting values for 'process.env.NEXT_RUNTIME'
-
-DefinePlugin
-Conflicting values for 'process.env.__NEXT_OPTIMIZE_FONTS'
-*/

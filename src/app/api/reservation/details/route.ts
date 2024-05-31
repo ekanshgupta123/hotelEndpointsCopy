@@ -1,6 +1,5 @@
 import dotenv from 'dotenv';
 import { NextResponse } from 'next/server';
-import { NextApiResponse } from 'next';
 dotenv.config({ path: "/Users/vijayrakeshchandra/Desktop/previous/api_endpoint/Hotel-Booking-Checkin/src/app/api/reservation/.env" });
 
 interface Guests {

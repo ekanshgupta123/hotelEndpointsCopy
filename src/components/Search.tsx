@@ -78,6 +78,7 @@ const Search = () => {
     return (
         <div className="search-container">
             <h1>Check-In Search</h1>
+            <button onClick={() => router.push("/reservation")}>click me</button>
             <form className="search-form" onSubmit={onSubmit}>
                 <div className="form-row">
                     <input
