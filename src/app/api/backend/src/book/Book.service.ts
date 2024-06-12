@@ -69,6 +69,20 @@ export class BookService {
         return {result: response, pID: partnerInfo};
     }
 
+    async bookingStatus(pID: string): Promise<string> {
+        const { data } = await firstValueFrom(this.httpService.post<Status>(
+            'https://api.worldota.net/api/b2b/v3/hotel/order/booking/finish/status/', 
+            { "partner_order_id": pID }, 
+            { headers: this.headers }
+        ));
+        const response: string = data.status;
+        if (response != 'ok') {
+            return this.bookingStatus(pID);
+        } else {
+            return response;
+        }
+    }
+
     async cancelBooking(pID: string): Promise<string> {
         const { data } = await firstValueFrom(this.httpService.post<Status>(
             'https://api.worldota.net/api/b2b/v3/hotel/order/cancel/', 
