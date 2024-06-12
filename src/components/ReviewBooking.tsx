@@ -27,6 +27,7 @@ interface HotelPage {
     "currency": string,
 }
 
+
 interface HotelRoom {
     name: string;
     price: number;
