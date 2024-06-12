@@ -1,8 +1,8 @@
 import { useRouter } from 'next/router';
 import React, { useState, useEffect } from 'react';
-import axios from 'axios'
-import '../styles/App.css';
+import axios, { AxiosResponse } from 'axios'
 import Navbar from './Navbar'
+import '../styles/App.css'
 
 interface Guests {
     age: null,
@@ -99,10 +99,15 @@ const Reservation: React.FC = () => {
     useEffect(() => {
         const apiCall = async (): Promise<void> => {
             try {
-                const response = await axios.post('/api/reservation/list')
-                const { multiple, userName } = response.data
-                setReservations(multiple);
-                setUser(userName);
+                const request: AxiosResponse = await 
+                axios.get('http://localhost:5001/reservation/list', {
+                  headers: { 'Content-Type': 'application/json' },
+                  withCredentials: true,
+                })
+                const { data } = request.data;
+                const { list, user } = data;
+                setReservations(list);
+                setUser(user);
             } catch (e) {
                 console.error(e)
             }
@@ -117,11 +122,14 @@ const Reservation: React.FC = () => {
         const reservationLookup = async (): Promise<void> => {
             if (hotel) {
                 try {
-                    const response = await axios.post('/api/reservation/details', {
-                        hotel: hotel, name: user
+                    const request: AxiosResponse = await axios.get('http://localhost:5001/reservation/details', {
+                        params: { hotel: hotel, list: reservations },
+                        headers: { 'Content-Type': 'application/json' },
+                        withCredentials: true
                     })
-                    const { single } = response.data;
-                    setDetails(single);
+                    const response = await request.data;
+                    const { data } = response;
+                    setDetails(data);
                     setRetrieving(false);
                 } catch (e) {
                     console.error(e);
@@ -135,9 +143,9 @@ const Reservation: React.FC = () => {
         return <div>Loading...</div>;
     }
 
-    const handleViewItinerary = (ID: typeof id) => {
+    const handleViewHotel = () => {
         const objectString = JSON.stringify(details)
-        router.push(`/hotel/details/${ID}?details=${encodeURIComponent(objectString)}`)
+        router.push(`/hotel/details/${id}?details=${encodeURIComponent(objectString)}`)
     }
 
     const sideItinerary = () => {
@@ -192,27 +200,28 @@ const Reservation: React.FC = () => {
             return <p>Loading...</p>
         } 
     }
+
     return (
         <>
             <header><Navbar /></header>
             <div className={`reservation-container ${scale ? 'scale' : ''}`}>
                 <div className='above-columns'>
-                    <label className='guest-label'>Guests</label>
-                    <label className='in-label'>In</label>
-                    <label className='out-label'>Out</label>
-                    <label className='hotel-label'>Hotel</label>
-                    <label className='nights-label'>Nights</label>
+                    <label className='item-label'>Guests</label>
+                    <label className='item-label'>Day In</label>
+                    <label className='item-label'>Day Out</label>
+                    <label className='item-label'>Hotel</label>
+                    <label className='item-label'>Nights</label>
                 </div>
                 {reservations.map(order => (
-                    <div className='columns'>
+                    <div className='columns' onClick={() => {
+                        setHotel(order.invoice_id);
+                        setScale(true);
+                        setRetrieving(true);
+                    }}>
                         <label>{user}</label>
-                        <label style={{ marginRight: '20px', maxWidth: '100px' }}>{new Date(order.checkin_at).toDateString()}</label>
-                        <label style={{ marginRight: '10px', maxWidth: '100px' }}>{new Date(order.checkout_at).toDateString()}</label>
-                        <button className='button-specific' onClick={function () {
-                            setHotel(order.invoice_id);
-                            setScale(true);
-                            setRetrieving(true);
-                        }}>{order.hotel_data.id.replace(/_/g, ' ').replace(/\b\w/g, (char) => char.toUpperCase())}</button>
+                        <label style={{ marginRight: '20px', width: '120px' }}>{new Date(order.checkin_at).toDateString()}</label>
+                        <label style={{ marginRight: '10px', width: '120px' }}>{new Date(order.checkout_at).toDateString()}</label>
+                        <label className='hotel-specific'>{order.hotel_data.id.replace(/_/g, ' ').replace(/\b\w/g, (char) => char.toUpperCase())}</label>
                         <label style={{ maxWidth: '5px' }}>{order.nights}</label>
                     </div>
                 ))}
@@ -220,10 +229,9 @@ const Reservation: React.FC = () => {
             {scale && 
             <div className='itin-tag'>
                 <div style={{ marginTop: '30%' }}>{sideItinerary() || <p>No Hotel Selected</p>}</div>
+                <button onClick={() => handleViewHotel()} style={{ marginTop: '5%' }}>View Full Itinerary</button>
                 <button onClick={() => setScale(false)} style={{ marginTop: '5%' }}>Close Itinerary</button>
-                <button onClick={() => handleViewItinerary(id || "")}>View Full Itinerary</button>
-            </div>
-            }
+            </div>}
             <div>
                 <div>
                     <button onClick={() => setScale(true)}>Toggle Side Itinerary</button>
