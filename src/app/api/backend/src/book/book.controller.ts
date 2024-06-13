@@ -68,8 +68,11 @@ export class BookController {
         email
       ); 
       return response.status(HttpStatus.OK).json({
-        status: apiCall.result == 'ok' && 'Order has been placed.' || 'Error, booking unsuccessful.',
-        data: { partnerID: apiCall.pID, objectID: apiCall.objectID, pUUID: payUUID }
+        status: 'success',
+        data: { partnerID: apiCall.pID, 
+          objectID: ratesList.item_id, 
+          pUUID: payUUID, 
+          credit: apiCall.creditNeeded }
       });
     } catch (e) {
       return response.status(HttpStatus.INTERNAL_SERVER_ERROR).json({ error: e })

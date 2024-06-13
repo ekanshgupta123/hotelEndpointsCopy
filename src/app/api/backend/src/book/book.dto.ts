@@ -43,8 +43,7 @@ export class Status {
     "status": string
   };
 
-export class Schema {
-  result: string;
+export class FinalSchema {
+  creditNeeded: boolean;
   pID: string;
-  objectID: string
 }

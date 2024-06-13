@@ -1,7 +1,7 @@
 import { HttpService } from "@nestjs/axios";
 import { ConfigService } from "@nestjs/config";
 import { firstValueFrom } from "rxjs";
-import { Page, PageData, Rates, RatesData, Status, Schema } from "./book.dto";
+import { Page, PageData, Rates, RatesData, Status, FinalSchema } from "./book.dto";
 import { v4 as uuid } from 'uuid';
 import { Injectable } from "@nestjs/common";
 
@@ -37,11 +37,12 @@ export class BookService {
     async bookingFinish(rates: RatesData, 
         firstName: string, 
         lastName: string, 
-        email: string): Promise<Schema> {
+        email: string): Promise<FinalSchema> {
         const partnerInfo: string = rates.partner_order_id
-        const paymentInfo: { currency_code: string } = rates.payment_types.filter(method => {
+        const paymentInfo: { currency_code: string, is_need_credit_card_data: boolean } = rates.payment_types.filter(method => {
             return method.currency_code == 'USD';
         })[0];
+
         const bodyData = {
             "language": "en",
             "partner": {
@@ -68,9 +69,8 @@ export class BookService {
             bodyData, 
             { headers: this.headers }
         ));
-        const response: string = data.status;
-        return { result: response, pID: partnerInfo, objectID: rates.item_id };
-    }
+        return data.status == 'ok' && { creditNeeded: paymentInfo.is_need_credit_card_data, pID: partnerInfo };
+    };
 
     async bookingStatus(pID: string): Promise<string> {
         const { data } = await firstValueFrom(this.httpService.post<Status>(
@@ -83,7 +83,7 @@ export class BookService {
             return this.bookingStatus(pID);
         } else {
             return response;
-        }
+        };
     }
 
     async cancelBooking(pID: string): Promise<string> {
