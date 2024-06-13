@@ -60,10 +60,16 @@ export class BookController {
         guests
       );
       const formBooking = await this.bookService.bookingForm(hashAvailable, remoteAddress);
-      const apiCall = await this.bookService.bookingFinish(formBooking, first, last, email); 
+      const { ratesList, payUUID } = formBooking;
+      const apiCall = await this.bookService.bookingFinish(
+        ratesList, 
+        first, 
+        last, 
+        email
+      ); 
       return response.status(HttpStatus.OK).json({
-        status: 'Order has been placed.',
-        data: apiCall.pID
+        status: apiCall.result == 'ok' && 'Order has been placed.' || 'Error, booking unsuccessful.',
+        data: { partnerID: apiCall.pID, objectID: apiCall.objectID, pUUID: payUUID }
       });
     } catch (e) {
       return response.status(HttpStatus.INTERNAL_SERVER_ERROR).json({ error: e })

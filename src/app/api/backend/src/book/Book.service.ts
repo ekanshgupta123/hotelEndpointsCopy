@@ -18,7 +18,7 @@ export class BookService {
         'Authorization': this.authHeader,
     };
 
-    async bookingForm(hash: string, ipAddress: string): Promise<RatesData> {
+    async bookingForm(hash: string, ipAddress: string): Promise<{ratesList: RatesData, payUUID: string}> {
         const UUID: string = uuid()
         const bodyData  = {
             "partner_order_id": UUID,
@@ -31,10 +31,13 @@ export class BookService {
             bodyData, 
             { headers: this.headers }
         ));
-        return data.data;
+        return {ratesList: data.data, payUUID: UUID};
     }
 
-    async bookingFinish(rates: RatesData, firstName: string, lastName: string, email: string): Promise<Schema> {
+    async bookingFinish(rates: RatesData, 
+        firstName: string, 
+        lastName: string, 
+        email: string): Promise<Schema> {
         const partnerInfo: string = rates.partner_order_id
         const paymentInfo: { currency_code: string } = rates.payment_types.filter(method => {
             return method.currency_code == 'USD';
@@ -66,7 +69,7 @@ export class BookService {
             { headers: this.headers }
         ));
         const response: string = data.status;
-        return {result: response, pID: partnerInfo};
+        return { result: response, pID: partnerInfo, objectID: rates.item_id };
     }
 
     async bookingStatus(pID: string): Promise<string> {

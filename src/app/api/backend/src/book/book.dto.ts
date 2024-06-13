@@ -12,6 +12,7 @@ export class Page {
   };
 
 export class RatesData {
+    item_id: string,
     partner_order_id: string;
     payment_types: {
       amount: string;
@@ -44,5 +45,6 @@ export class Status {
 
 export class Schema {
   result: string;
-  pID: string
+  pID: string;
+  objectID: string
 }
