@@ -33,7 +33,7 @@ export class BookController {
       };
       const apiCall: string = await this.bookService.bookingStatus(partnerID);
       return response.status(HttpStatus.OK).json({
-          status: 'Booking has been finalized.',
+          status: 'Awaiting credit card verification.',
           data: apiCall
         });
     } catch (e) {
@@ -82,9 +82,8 @@ export class BookController {
   async creditTokenization (@Body() params: TokenFormat, @Res() response: Response): Promise<Response> {
     try {
       const apiCall = await this.bookService.creditProcessing(params);
-      console.log('reached', apiCall);
       return response.status(HttpStatus.OK).json({ 
-        status: 'Payment processed.', 
+        status: 'Payment processed. Booking is finished.', 
         data: apiCall 
       });
     } catch (e) {

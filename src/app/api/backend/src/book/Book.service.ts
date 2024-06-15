@@ -108,7 +108,6 @@ export class BookService {
             args,
             { headers: this.headers}
         ));
-        console.log(data);
         return data.status
     };
 
