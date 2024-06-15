@@ -12,7 +12,7 @@ export class Page {
   };
 
 export class RatesData {
-    item_id: string,
+    item_id: string;
     partner_order_id: string;
     payment_types: {
       amount: string;
@@ -45,5 +45,25 @@ export class Status {
 
 export class FinalSchema {
   creditNeeded: boolean;
+  cvcNeeded: boolean;
   pID: string;
-}
+};
+
+class CoreData {
+  "year": string; 
+  "card_number": string;
+  "card_holder": string; 
+  "month": string
+};
+
+export class TokenFormat {
+  "object_id": string;
+  "pay_uuid": string;
+  "init_uuid": string;
+  "user_first_name": string;
+  "user_last_name": string;
+  "cvc"?: string;
+  "credit_card_data_core": CoreData;
+  "is_cvc_required": boolean;
+};
+

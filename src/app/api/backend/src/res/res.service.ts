@@ -32,7 +32,6 @@ export class ResService {
     },
     "language":"en"
   };
-
   async getInfo(): Promise<Array<Order>> {
     const { data } = await firstValueFrom(
       this.httpService.post<Components>("https://api.worldota.net/api/b2b/v3/hotel/order/info/", 

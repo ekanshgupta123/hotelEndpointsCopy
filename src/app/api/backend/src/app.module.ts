@@ -13,7 +13,7 @@ import { BookService } from './book/Book.service';
     JwtModule.register({ secret: '1234' }),
     ConfigModule.forRoot({
       envFilePath:
-        '/Users/vijayrakeshchandra/Desktop/previous/api_endpoint/nestapp/src/.env',
+        '/Users/vijayrakeshchandra/Desktop/previous/api_endpoint/Hotel-Booking-Checkin/src/app/api/backend/src/.env',
       isGlobal: true,
     })
   ],

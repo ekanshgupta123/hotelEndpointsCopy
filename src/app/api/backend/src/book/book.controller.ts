@@ -5,6 +5,7 @@ import {
   Delete,
   Req,
   Query,
+  Body,
   Headers,
   Res,
   Ip, 
@@ -14,6 +15,7 @@ import {
 import { BookService } from './Book.service';
 import { Request, Response } from 'express';
 import { JwtService } from '@nestjs/jwt';
+import { TokenFormat } from './book.dto';
 
 @Controller('booking')
 export class BookController {
@@ -29,7 +31,7 @@ export class BookController {
       if (!partnerID) {
         return response.status(HttpStatus.BAD_REQUEST)
       };
-      const apiCall = await this.bookService.bookingStatus(partnerID);
+      const apiCall: string = await this.bookService.bookingStatus(partnerID);
       return response.status(HttpStatus.OK).json({
           status: 'Booking has been finalized.',
           data: apiCall
@@ -53,12 +55,7 @@ export class BookController {
       const jwtToken: string = request.cookies['token'];
       const { name, email } = this.jwtService.decode(jwtToken);
       const [first, last] = name.split(" ");
-      const hashAvailable = await this.bookService.getInfo(
-        id,
-        checkin,
-        checkout,
-        guests
-      );
+      const hashAvailable = await this.bookService.getInfo(request.body);
       const formBooking = await this.bookService.bookingForm(hashAvailable, remoteAddress);
       const { ratesList, payUUID } = formBooking;
       const apiCall = await this.bookService.bookingFinish(
@@ -68,11 +65,27 @@ export class BookController {
         email
       ); 
       return response.status(HttpStatus.OK).json({
-        status: 'success',
+        status: 'Order has been placed.',
         data: { partnerID: apiCall.pID, 
           objectID: ratesList.item_id, 
-          pUUID: payUUID, 
-          credit: apiCall.creditNeeded }
+          pUUID: payUUID,
+          credit: apiCall.creditNeeded,
+          userName: [first, last] }
+      });
+    } catch (e) {
+      return response.status(HttpStatus.INTERNAL_SERVER_ERROR).json({ error: e })
+    };
+  };
+
+  @Post('credit')
+  @HttpCode(201)
+  async creditTokenization (@Body() params: TokenFormat, @Res() response: Response): Promise<Response> {
+    try {
+      const apiCall = await this.bookService.creditProcessing(params);
+      console.log('reached', apiCall);
+      return response.status(HttpStatus.OK).json({ 
+        status: 'Payment processed.', 
+        data: apiCall 
       });
     } catch (e) {
       return response.status(HttpStatus.INTERNAL_SERVER_ERROR).json({ error: e })
@@ -86,7 +99,7 @@ export class BookController {
       if (!partnerID) {
         return response.status(HttpStatus.BAD_REQUEST)
       };
-      const apiCall = await this.bookService.cancelBooking(partnerID);
+      const apiCall: string = await this.bookService.cancelBooking(partnerID);
       return response.status(HttpStatus.OK).json({
           status: 'Booking has been canceled.',
           data: apiCall 

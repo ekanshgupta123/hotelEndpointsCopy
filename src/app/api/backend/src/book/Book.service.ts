@@ -1,7 +1,7 @@
 import { HttpService } from "@nestjs/axios";
 import { ConfigService } from "@nestjs/config";
 import { firstValueFrom } from "rxjs";
-import { Page, PageData, Rates, RatesData, Status, FinalSchema } from "./book.dto";
+import { Page, PageData, Rates, RatesData, Status, FinalSchema, TokenFormat } from "./book.dto";
 import { v4 as uuid } from 'uuid';
 import { Injectable } from "@nestjs/common";
 
@@ -18,7 +18,7 @@ export class BookService {
         'Authorization': this.authHeader,
     };
 
-    async bookingForm(hash: string, ipAddress: string): Promise<{ratesList: RatesData, payUUID: string}> {
+    async bookingForm(hash: string, ipAddress: string): Promise<{ratesList: RatesData, payUUID: string }> {
         const UUID: string = uuid()
         const bodyData  = {
             "partner_order_id": UUID,
@@ -31,7 +31,7 @@ export class BookService {
             bodyData, 
             { headers: this.headers }
         ));
-        return {ratesList: data.data, payUUID: UUID};
+        return {ratesList: data.data, payUUID: UUID };
     }
 
     async bookingFinish(rates: RatesData, 
@@ -39,7 +39,9 @@ export class BookService {
         lastName: string, 
         email: string): Promise<FinalSchema> {
         const partnerInfo: string = rates.partner_order_id
-        const paymentInfo: { currency_code: string, is_need_credit_card_data: boolean } = rates.payment_types.filter(method => {
+        const paymentInfo: { currency_code: string, 
+            is_need_credit_card_data: boolean, 
+            is_need_cvc: boolean } = rates.payment_types.filter(method => {
             return method.currency_code == 'USD';
         })[0];
 
@@ -69,7 +71,9 @@ export class BookService {
             bodyData, 
             { headers: this.headers }
         ));
-        return data.status == 'ok' && { creditNeeded: paymentInfo.is_need_credit_card_data, pID: partnerInfo };
+        return data.status == 'ok' && { creditNeeded: paymentInfo.is_need_credit_card_data, 
+            cvcNeeded: paymentInfo.is_need_cvc, 
+            pID: partnerInfo };
     };
 
     async bookingStatus(pID: string): Promise<string> {
@@ -78,11 +82,10 @@ export class BookService {
             { "partner_order_id": pID }, 
             { headers: this.headers }
         ));
-        const response: string = data.status;
-        if (response != 'ok') {
+        if (data.status != 'ok') {
             return this.bookingStatus(pID);
         } else {
-            return response;
+            return data.status;
         };
     }
 
@@ -92,27 +95,27 @@ export class BookService {
             { "partner_order_id": pID }, 
             { headers: this.headers }
         ));
-        const response: string = data.status;
-        if (response != 'ok') {
+        if (data.status != 'ok') {
             return this.cancelBooking(pID);
         } else {
-            return response;
-        }
-    }
-
-    async getInfo(id: string, 
-        checkin: string, 
-        checkout: string, 
-        guests: {adults: number, children: number[]}[]): Promise<string> {
-        const bodyData = {
-            "id": id,
-            "checkin": checkin,
-            "checkout": checkout,
-            "guests": guests
+            return data.status;
         };
+    };
+
+    async creditProcessing(args: TokenFormat): Promise<string> {
+        const { data } = await firstValueFrom(this.httpService.post<{ status: string }>(
+            'https://api.payota.net/api/public/v1/manage/init_partners', 
+            args,
+            { headers: this.headers}
+        ));
+        console.log(data);
+        return data.status
+    };
+
+    async getInfo(args: any): Promise<string> {
         const { data } = await firstValueFrom(this.httpService.post<Page>(
             'https://api.worldota.net/api/b2b/v3/search/hp/', 
-            bodyData, 
+            {...args}, 
             { headers: this.headers }
         ));
         const response: PageData = data.data;
@@ -129,4 +132,4 @@ export class BookService {
         const checked: PageData = availability.data.data
         return checked.hotels[0].rates[0].book_hash;
     }
-}  
+};  
