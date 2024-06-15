@@ -103,7 +103,7 @@ const Reservation: React.FC = () => {
                 axios.get('http://localhost:5001/reservation/list', {
                   headers: { 'Content-Type': 'application/json' },
                   withCredentials: true,
-                })
+                });
                 const { data } = request.data;
                 const { list, user } = data;
                 setReservations(list);

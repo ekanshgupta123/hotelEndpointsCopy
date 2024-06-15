@@ -1,17 +1,18 @@
 import { useRouter } from 'next/router';
 import axios, { AxiosResponse } from 'axios';
 import React, { useEffect, useState } from 'react';
+import { v4 as uuid } from 'uuid';
 import '../styles/App.css';
 
 interface HotelSpecifics {
-    id: string;
-    name: string;
-    address: string;
-    starRating: number;
-    amenities: string[];
-    price: number;
-    images: string[];
-    description: string;
+    "id": string;
+    "name": string;
+    "address": string;
+    "starRating": number;
+    "amenities": string[];
+    "price": number;
+    "images": string[];
+    "description": string;
 }
 
 interface HotelPage {
@@ -27,38 +28,47 @@ interface HotelPage {
     "currency": string,
 }
 
-
 interface HotelRoom {
-    name: string;
-    price: number;
-    type: string;
+    "name": string;
+    "price": number;
+    "type": string;
 }
 
 interface HotelDetails {
-    room: HotelRoom,
-    params: HotelPage,
-    specifics: HotelSpecifics
+    "room": HotelRoom,
+    "params": HotelPage,
+    "specifics": HotelSpecifics
 }
 
-interface CreditToken {
+interface BookingResponse { 
+    "partnerID": string, 
+    "objectID": string, 
+    "pUUID": string,
+    "credit": boolean,
+    "userName": string[]
+};
+
+interface CoreData {
+    "year": string, 
+    "card_number": string,
+    "card_holder": string, 
+    "month": string
+};
+
+interface TokenFormat {
     "object_id": string,
     "pay_uuid": string,
     "init_uuid": string,
     "user_first_name": string,
     "user_last_name": string,
-    "cvc": string,
-    "credit_card_data_core": {
-        "year": string,
-        "card_number": string,
-        "card_holder": string,
-        "month": string
-    },
+    "cvc"?: string,
+    "credit_card_data_core": CoreData,
     "is_cvc_required": boolean,
-}
+};
 
 const dummyHotelSelected: HotelPage = {
-    "checkin": "2024-06-13",
-    "checkout": "2024-06-15",
+    "checkin": "2024-06-19",
+    "checkout": "2024-06-21",
     "guests": [
         {
             "adults": 1,
@@ -75,7 +85,7 @@ const dummyProps = {
     taxes: '$232',
     refund: 'Non-Refundable',
     cancellation: '...'
-}
+};
 
 const ReviewBooking: React.FC = () => {
     const router = useRouter();
@@ -83,6 +93,7 @@ const ReviewBooking: React.FC = () => {
     const [hotel, setHotel] = useState<HotelPage>(dummyHotelSelected);
     const [booking, setBooking] = useState<string>("");
     const [status, setStatus] = useState<string>("");
+    const [cancel, setCancel] = useState<string>("");
     const [room, setRoom] = useState<HotelRoom>({
         name: "",
         price: 0,
@@ -92,7 +103,7 @@ const ReviewBooking: React.FC = () => {
         "checkin": "", 
         "checkout": "", 
         "guests": [{
-            "adults": 0,
+            "adults": 1,
             "children": [] 
         }],
         "language": "",
@@ -109,6 +120,13 @@ const ReviewBooking: React.FC = () => {
         description: "",
     });
     const [pid, setPid] = useState<string>("");
+    const [dataCore, setDataCore] = useState<CoreData>({
+        "year": "", // || "18"
+        "card_number": "", // || "4111111111111111"
+        "card_holder": "", // || "TEST"
+        "month": "" // || "05"
+    });
+    const [cvcNum, setCvcNum] = useState<string>("");
 
     useEffect(() => {
         const searchParams = new URLSearchParams(window.location.search);
@@ -119,32 +137,39 @@ const ReviewBooking: React.FC = () => {
             setRoom(room);
             setParameters(params);
             setSpecifics(specifics);
-        }
+        };
         setBooking("");
         setStatus("");
     }, [])
 
-    const handleOnClick = async (): Promise<void> => {
+    const handleBooking = async (): Promise<void> => {
         try {
             setStatus('Please wait a moment.');
-            const bookCall = await axios.post('http://localhost:5001/booking/create', {
-                id: specifics.id,
-                checkin: parameters.checkin,
-                checkout: parameters.checkout,
-                guests: [
-                    {
-                        "adults": parameters.guests[0].adults,
-                        "children": [parameters.guests[0].children.length]
-                    }
-                ]
-            }, 
+            const bookCall: AxiosResponse<{ status: string, data: BookingResponse }> = await axios.post('http://localhost:5001/booking/create', {
+                id: specifics.id || "test_hotel_do_not_book",
+                checkin: parameters.checkin || dummyHotelSelected.checkin,
+                checkout: parameters.checkout || dummyHotelSelected.checkout,
+                guests: dummyHotelSelected.guests || [
+                        {
+                            "adults": parameters.guests[0].adults,
+                            "children": [parameters.guests[0].children.length]
+                        }
+                    ],
+                currency: dummyHotelSelected.currency,
+                language: dummyHotelSelected.language
+                }, 
                 { headers:{"Content-Type" : "application/json"},
                 withCredentials: true
             });
-            const result = await bookCall.data;
-            setBooking(result.status);
+            const { status, data } = bookCall.data;
+            setBooking(status);
             setStatus('Finalizing...');
-            await handleStatus(result.data);
+            const { partnerID, objectID, pUUID, credit, userName } = data;
+            await creditTokenization(objectID, pUUID, credit, userName)
+            // if (credit) { 
+            //     await creditTokenization(objectID, pUUID, cvc, userName)
+            // };
+            await handleStatus(partnerID);
         } catch (e) {
             console.error(e);
         };
@@ -155,25 +180,75 @@ const ReviewBooking: React.FC = () => {
             if (partner) {
                 setPid(partner);
             };
-            const statusCall: AxiosResponse = await axios.get('http://localhost:5001/booking/status', {
+            const statusCall: AxiosResponse<{ status: string, data: string }> = await axios.get('http://localhost:5001/booking/status', {
                 params: { pID: partner },  
                 headers: { 'Content-Type': 'application/json' },
                 withCredentials: true
             });
-            const result = await statusCall.data;
-            if (result.data == 'ok') {
-                seeConfirm(partner);
+            const { status, data } = statusCall.data;
+            if (data == 'ok') {
+                setStatus(status)
+                // seeConfirm(partner);
             };
         } catch (e) {
             console.error(e);
         };
     };
+    
+    const handleCoreChange = (event: React.ChangeEvent<HTMLInputElement>): void => {
+        event.preventDefault();
+        const { name, value } = event.target;
+        setDataCore(prevParams => ({
+            ...prevParams,
+            [name]: value
+        }));
+    };
 
-    const seeConfirm = (partner?: string) => {
+    const handleTokenChange = (args: any) => {
+
+    };
+
+    const creditTokenization = async (itemID: string, payUID: string, code: boolean, name: string[]) => {
+        const initUUID: string = uuid();
+        const body: TokenFormat = {
+            "object_id": itemID,
+            "pay_uuid": payUID,
+            "init_uuid": initUUID,
+            "user_first_name": name[0],
+            "user_last_name": name[1],
+            "cvc": cvcNum,
+            "is_cvc_required": code,
+            "credit_card_data_core": dataCore
+        };
+        console.log(body);
+        const creditCall: AxiosResponse<{ status: string, data: string }> = await axios.post('http://localhost:5001/booking/credit', 
+            body, 
+            { headers: { 'Content-Type': 'application/json' }, 
+            withCredentials: true
+        });
+        const { status, data } = creditCall.data;
+        if (data == 'ok') {
+            console.log(status);
+        };
+    };
+
+    const seeConfirm = (partner?: string): void => {
         const sendObj = { ...dummyProps, ...dummyHotelSelected, pID: pid || partner };
         const objectString = JSON.stringify(sendObj);
         router.push(`/confirmation/?details=${encodeURIComponent(objectString)}`)
-    }
+    };
+
+    const handleCancellation = async (): Promise<void | null> => {
+        setCancel('Processing...');
+        const cancelCall: AxiosResponse<{ status: string, data: string }> = await axios.delete('http://localhost:5001/booking/cancel', {
+            headers: { 'Content-Type': 'application/json' ,'pID': pid },
+            withCredentials: true
+        });
+        const result = cancelCall.data;
+        setCancel(result.status);
+    };
+
+    //getInitialProps()
 
     return (
         <div>
@@ -260,24 +335,50 @@ const ReviewBooking: React.FC = () => {
                     justifyContent: 'start', 
                     marginBottom: '6%' }}>
                         <div style={{ marginRight: '30%'}}>
-                            <input placeholder='Card' style={{ width: '250%', height: '250%' }}></input>
+                            <input 
+                            type='text' 
+                            placeholder='Card Holder' 
+                            name='card_holder' 
+                            onChange={handleCoreChange}
+                            style={{ width: '250%', height: '250%' }} />
                         </div>
                         <div>
-                            <input placeholder='Google Pay' style={{ width: '250%', height: '250%' }}></input>
+                            <input 
+                            type='text'
+                            placeholder='Expiration Month (MM)' 
+                            name='month'
+                            onChange={handleCoreChange}
+                            style={{ width: '125%', height: '250%' }} />
+                        </div>
+                        <div>
+                            <input type='text' 
+                            placeholder='Expiration Year (YY)' 
+                            name='year'
+                            onChange={handleCoreChange} 
+                            style={{ marginLeft: '25%', width: '125%', height: '250%' }} />
                         </div>
                     </div>
                     <div style={{ display: 'flex', 
                     flexDirection: 'row',
                     justifyContent: 'start', 
                     marginBottom: '6%' }}>
-                        <div style={{ marginRight: '30%'}}>
-                            <input placeholder='Card Number (1234 1234 1234 1234)' style={{ width: '250%', height: '250%' }}></input>
+                        <div style={{ marginRight: '25.55%'}}>
+                            <input 
+                            type='text'
+                            placeholder='Card Number (1234 1234 1234 1234)'
+                            name={"card_number"} 
+                            value={dataCore.card_number} 
+                            onChange={handleCoreChange}
+                            style={{ width: '250%', height: '250%' }} />
                         </div>
                         <div>
-                            <input placeholder='Expiration (MM/YY)' style={{ width: '125%', height: '250%' }}></input>
-                        </div>
-                        <div>
-                        <input placeholder='CVC' style={{ marginLeft: '25%', width: '125%', height: '250%' }}></input>
+                            <input type='text' 
+                            placeholder='CVC' 
+                            onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
+                                event.preventDefault();
+                                setCvcNum(event.target.value); 
+                            }} 
+                            style={{ marginLeft: '25%', width: '125%', height: '250%' }} />
                         </div>
                     </div>
                     <div style={{ display: 'flex', 
@@ -291,12 +392,14 @@ const ReviewBooking: React.FC = () => {
                             </select>
                         </div>
                         <div>
-                            <input placeholder='ZIP' style={{ marginLeft: '29%', width: '250%', height: '250%' }}></input>
+                            <input placeholder='ZIP' style={{ marginLeft: '29%', width: '250%', height: '250%' }} />
                         </div>
                     </div>
-                    <button style={{ width: '93.5%', marginTop: '3.5%'}} onClick={() => handleOnClick()}>Book Now</button>
+                    <button style={{ width: '93.5%', marginTop: '3.5%'}} onClick={() => handleBooking()}>Book Now</button>
                     <label>{booking}</label>
                     <label>{status}</label>
+                    <button onClick={() => handleCancellation()}>Cancel {cancel}</button>
+                    <button onClick={() => creditTokenization('hi', 'yo', true)}>Click Me</button>
                 </div>
             </div>
             <div style={{ top: '10.1%', 
@@ -334,7 +437,7 @@ const ReviewBooking: React.FC = () => {
                 <hr />
                 <div style={{ padding: '1%', marginTop: '1%', display: 'flex', justifyContent: 'space-between', marginBottom: '2%' }}>
                     <label>To Pay:</label>
-                    <label>{`$${Number(dummyProps.price.slice(1)) + Number(dummyProps.taxes.slice(1))}`}</label>
+                    <label>{`$${Number(room.price) + Number(dummyProps.taxes.slice(1))}`}</label>
                 </div>
             </div>
         </div>
