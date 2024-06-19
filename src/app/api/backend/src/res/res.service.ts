@@ -48,6 +48,21 @@ export class ResService {
     return response;
   };
 
+  async hotelData (args: { id: string, language: string }) {
+    const { data } = await firstValueFrom(
+      this.httpService.post<{ data: {address: string, images: string[], star_rating: string, latitude: string, longitude: string} }>(
+        "https://api.worldota.net/api/b2b/v3/hotel/info/", 
+      args, 
+      { headers: this.headers })
+    );
+    const { address, images, star_rating, latitude, longitude } = data.data;
+    return { address: address, 
+      images: images, 
+      star_rating: star_rating, 
+      latitude: latitude,
+      longitude: longitude }
+  };
+
   see (): Array<Order> {
     const result = this.cache.get<Array<Order>>('list');
     return result

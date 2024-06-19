@@ -72,8 +72,22 @@ export class ResController {
 
   @Delete('clear')
   @HttpCode(204)
-  clearCache () {
+  clearCache (): void {
     this.appService.flush();
   };
+
+  @Get('info')
+  @HttpCode(200)
+  async additionalInfo (@Query() params: {id: string, language: string}, @Res() response: Response) {
+    try {
+      const result = await this.appService.hotelData(params);
+      return response.status(HttpStatus.OK).json({
+        status: 'success',
+        data: result,
+      });
+    } catch (e) {
+      return response.status(HttpStatus.INTERNAL_SERVER_ERROR).json({ error: e })
+    };
+  }
 
 };

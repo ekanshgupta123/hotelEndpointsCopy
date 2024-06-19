@@ -87,7 +87,6 @@ interface Components {
 
 const Reservation: React.FC = () => {
     const router = useRouter();
-    const { id } = router.query;
     const [rendered, setRendered] = useState<boolean>(false)
     const [hotel, setHotel] = useState<string | null>(null);
     const [user, setUser] = useState<string | null>(null)
@@ -151,9 +150,9 @@ const Reservation: React.FC = () => {
     };
 
     const handleViewHotel = async () => {
-        flushCache();
-        const objectString = JSON.stringify(details)
-        router.push(`/hotel/details/${id}?details=${encodeURIComponent(objectString)}`)
+        await flushCache();
+        localStorage.setItem('reservationDetails', JSON.stringify(details))
+        router.push(`/reservation/details?info=${details?.agreement_number}`)
     };
 
     const sideItinerary = () => {  
