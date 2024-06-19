@@ -11,13 +11,13 @@ interface Guests {
       is_child: boolean,
       last_name: string,
       last_name_original: string
-}
+};
 
 interface GuestData {
   adults_number: number,
   children_number: number,
   guests: Guests[]
-}
+};
 
 interface RoomData {
     bedding_name: Array<string>,
@@ -25,19 +25,19 @@ interface RoomData {
     meal_name: string,
     room_idx: number,
     room_name: string
-}
+};
 
 interface Policies {
     end_at: null,
     penalty: { amount: string, amount_info: null, currency_code: string },
     start_at: null
-}
+};
 
 interface TaxAmount {
     amount_tax: { amount: string, currency_code: string }, 
     is_included: boolean, 
     name: string 
-}
+};
 
 interface Components {
     agreement_number: string,
@@ -83,7 +83,7 @@ interface Components {
     total_vat: { amount: string, currency_code: string, included: boolean },
     upsells: [],
     user_data: { arrival_datetime: null, email: string, user_comment: null }
-  }
+  };
 
 const Reservation: React.FC = () => {
     const router = useRouter();
@@ -123,12 +123,11 @@ const Reservation: React.FC = () => {
             if (hotel) {
                 try {
                     const request: AxiosResponse = await axios.get('http://localhost:5001/reservation/details', {
-                        params: { hotel: hotel, list: reservations },
+                        params: { hotel: hotel, name: user },
                         headers: { 'Content-Type': 'application/json' },
                         withCredentials: true
-                    })
-                    const response = await request.data;
-                    const { data } = response;
+                    });
+                    const { data } = request.data;
                     setDetails(data);
                     setRetrieving(false);
                 } catch (e) {
@@ -141,15 +140,24 @@ const Reservation: React.FC = () => {
 
     if (!reservations) {
         return <div>Loading...</div>;
-    }
+    };
 
-    const handleViewHotel = () => {
+    const flushCache = async () => {
+        await axios.delete('http://localhost:5001/reservation/clear', {
+            headers: { 'Content-Type': 'application/json' },
+            withCredentials: true
+        });
+        console.log('cleared');
+    };
+
+    const handleViewHotel = async () => {
+        flushCache();
         const objectString = JSON.stringify(details)
         router.push(`/hotel/details/${id}?details=${encodeURIComponent(objectString)}`)
-    }
+    };
 
-    const sideItinerary = () => {
-        if (details) {
+    const sideItinerary = () => {  
+        if (details && !retrieving) {
             return (
                 <div>
                     <h3>Trip Details:</h3>
@@ -196,10 +204,10 @@ const Reservation: React.FC = () => {
                     </div> 
                 </div>  
             )
-        } else if (!details && retrieving) {
+        } else if (retrieving) {
             return <p>Loading...</p>
-        } 
-    }
+        }; 
+    };
 
     return (
         <>

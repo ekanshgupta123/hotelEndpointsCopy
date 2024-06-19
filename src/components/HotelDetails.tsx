@@ -1,197 +1,186 @@
-import { useRouter } from 'next/router';
 import React, { useEffect, useState } from 'react';
-import '../styles/App.css';
-import pic from './checkins.png'
-import Image from 'next/image';
+import { useRouter } from 'next/router';
+import '../styles/HotelDisplay.css';
+import axios from 'axios';
 
-interface Guests {
-    age: null,
-      first_name: string,
-      first_name_original: string,
-      is_child: boolean,
-      last_name: string,
-      last_name_original: string
+interface HotelDetails {
+    id: string;
+    name: string;
+    address: string;
+    starRating: number;
+    amenities: string[];
+    price: number;
+    images: string[];
+    description: string;
+    main_name: string;
+    room_groups: RoomGroup[];
 }
 
-interface GuestData {
-  adults_number: number,
-  children_number: number,
-  guests: Guests[]
+interface RoomGroup {
+    name_struct: {
+        main_name: string;
+    };
+    images: string[];
 }
 
-interface RoomData {
-    bedding_name: Array<string>,
-    guest_data: GuestData,
-    meal_name: string,
-    room_idx: number,
-    room_name: string
+interface HotelSearchParams {
+    checkin: string;
+    checkout: string;
+    residency: string;
+    language: string;
+    guests: {
+        adults: number;
+        children: {
+            age: number;
+        }[];
+    }[];
+    region_id: number | null;
+    currency: string;
 }
 
-interface Policies {
-    end_at: null,
-    penalty: { amount: string, amount_info: null, currency_code: string },
-    start_at: null
+interface HotelRoom {
+    name: string;
+    price: number;
+    type: string;
+    images: string[];
 }
 
-interface TaxAmount {
-    amount_tax: { amount: string, currency_code: string }, 
-    is_included: boolean, 
-    name: string 
-}
-
-// interface Components {
-//     agreement_number: string,
-//     amount_payable: { amount: string, currency_code: string },
-//     amount_payable_vat: { amount: string, currency_code: string },
-//     amount_payable_with_upsells: { amount: string, currency_code: string },
-//     amount_refunded: { amount: string, currency_code: string },
-//     amount_sell: { amount: string, currency_code: string },
-//     amount_sell_b2b2c: { amount: string, currency_code: string },
-//     api_auth_key_id: null,
-//     cancellation_info: { free_cancellation_before: null, policies: Policies[] },
-//     cancelled_at: null,
-//     checkin_at: string,
-//     checkout_at: string,
-//     contract_slug: string,
-//     created_at: string,
-//     has_tickets: boolean,
-//     hotel_data: { id: string, order_id: string },
-//     invoice_id: string,
-//     is_cancellable: boolean,
-//     is_checked: boolean,
-//     meta_data: { voucher_order_comment: null },
-//     modified_at: string,
-//     nights: number,
-//     order_id: number,
-//     order_type: string,
-//     partner_data: { order_comment: null, order_id: string },
-//     payment_data: {
-//       invoice_id: number,
-//       invoice_id_v2: string,
-//       paid_at: null,
-//       payment_by: null,
-//       payment_due: string,
-//       payment_pending: string,
-//       payment_type: string
-//     },
-//     roomnights: number,
-//     rooms_data: RoomData[],
-//     source: string,
-//     status: string,
-//     supplier_data: { confirmation_id: null, name: null, order_id: string },
-//     taxes: TaxAmount[],
-//     total_vat: { amount: string, currency_code: string, included: boolean },
-//     upsells: [],
-//     user_data: { arrival_datetime: null, email: string, user_comment: null }
-//   }
-
-const HotelDetails: React.FC = () => {
+const HotelPage = () => {
+    console.log("I'm here in Hotel Page");
+    const [hotelData, setHotelData] = useState<HotelDetails | null>(null);
+    const [searchParams, setSearchParams] = useState<HotelSearchParams | null>(null);
+    const [rooms, setRooms] = useState<HotelRoom[]>([]); 
     const router = useRouter();
-    const { id } = router.query;
-    const [hotel, setHotel] = useState<any>(null);
+   
+    useEffect(() => {
+        const fetchedHotelData = localStorage.getItem('currentHotelData');
+        const fetchedSearchParams = localStorage.getItem('searchParams');
+        if (fetchedHotelData) {
+            setHotelData(JSON.parse(fetchedHotelData));
+            console.log('Fetched hotelData:', JSON.parse(fetchedHotelData)); // Log the fetched hotel data
+        }
+        if (fetchedSearchParams) {
+            setSearchParams(JSON.parse(fetchedSearchParams));
+            console.log('Fetched searchParams:', JSON.parse(fetchedSearchParams)); // Log the fetched search params
+        };
+    }, []);
 
     useEffect(() => {
-        if (id) {
-            const params = new URLSearchParams(window.location.search)
-            const objectPassed = params.get("details")
-            if (objectPassed) {
-                setHotel(JSON.parse(objectPassed));
-            }
-        }
-    }, [id]);
+        const getRooms = async () => {
+            if (!hotelData || !searchParams) return;
+            console.log("Fetching rooms with updated state");
+            
+            const body = {
+                checkin: searchParams.checkin,
+                checkout: searchParams.checkout,
+                residency: "us",
+                language: "en",
+                guests: searchParams.guests,
+                id: hotelData.id,  
+                currency: "USD"
+            };
 
-    if (!hotel) {
-        return <div>Loading...</div>;
-    }
+            console.log('Request body:', body);
+
+            try {
+                const response = await axios.post("http://localhost:5001/hotels/rooms", body);
+                const hotelsData = response.data.data.hotels;
+                if (hotelsData.length > 0) {
+                    console.log('API response hotelsData:', hotelsData); // Log the response data
+
+                    const updatedHotelData = { ...hotelData, room_groups: hotelsData[0].room_groups }; // Ensure room_groups are set
+                    setHotelData(updatedHotelData);
+                    console.log('Updated hotelData with room_groups:', updatedHotelData); // Log the updated hotel data
+
+                    const roomDetails = hotelsData[0].rates.map((rate: { room_name: string; daily_prices: number[]; room_data_trans: { main_name: string }; }) => {
+                        const rateMainName = rate.room_data_trans.main_name.trim();
+                        console.log('rate.room_data_trans.main_name:', rateMainName); // Log main_name
+
+                        const matchedHotelRoom = updatedHotelData.room_groups?.find((group: { name_struct: { main_name: string; }; }) => {
+                            const groupMainName = group.name_struct.main_name.trim();
+                            console.log('Comparing:', rateMainName, 'with:', groupMainName); // Log both values
+                            return groupMainName === rateMainName;
+                        });
+
+                        console.log('matchedHotelRoom:', matchedHotelRoom); // Log matchedHotelRoom
+                        return {
+                            name: rate.room_name,
+                            price: rate.daily_prices[0],
+                            type: rateMainName,
+                            images: matchedHotelRoom ? matchedHotelRoom.images.map((img: string) => img.replace('{size}', '240x240')) : []
+                        };
+                    });
+                    setRooms(roomDetails);
+                    console.log('Room details:', roomDetails); // Log the room details
+                }
+            } catch (error) {
+                console.error('Error fetching room data:', error);
+            }
+        };
+
+        getRooms();
+    }, [hotelData, searchParams]);
+
+    if (!hotelData) {
+        return <p>Loading...</p>;
+    };
+
+    const handleReservation = (idx: number) => {
+        localStorage.setItem('currentRoom', JSON.stringify(rooms[idx]));
+        const { id } = router.query;
+        router.push(`/review-booking?id=${id}`)
+    };
 
     return (
-        <div style={{ padding: '2%' }}>
-            <label>{'< Return to Trips'}</label>
-            <div style={{ display: 'flex', marginTop: '1%', marginBottom: '1.5%' }}>
-                <Image src={pic} width={140} height={40} alt='img' />
-                <div style={{ display: 'flex', flexDirection: 'column', marginLeft: '1%' }}>
-                    <label>{hotel.hotel_data.id.replace(/_/g, ' ').replace(/\b\w/g, (char) => char.toUpperCase())}</label>
-                    <label>Hotel Address</label>
-                    <label>Stars</label>
+        <>
+            <div className="hotel-container">
+                <div className="hotel-header">
+                    <h1>{hotelData.name}</h1>
+                    <p className="subtitle">{hotelData.address}</p>
+                    <div className="rating">{hotelData.starRating} Stars</div>
+                </div>
+                <div className="hotel-images">
+                    {hotelData.images.slice(0, 5).map((image, index) => (
+                        <img key={index} src={image.slice(0, 27) + "240x240" + image.slice(33)} alt={`View of ${hotelData.name}`} />
+                    ))}
+                </div>
+                <div className="hotel-details">
+                    <div className="hotel-info">
+                        <h2>About</h2>
+                        <p>{hotelData.description}</p>
+                        <h2>Price: ${hotelData.price}</h2>
+                    </div>
+                    <div className="hotel-amenities">
+                        <h2>Popular Amenities</h2>
+                        <ul className="amenities">
+                            {hotelData.amenities.slice(0, 9).map((amenity, index) => (
+                                <li key={index}>{amenity}</li>
+                            ))}
+                        </ul>
+                    </div>
                 </div>
             </div>
-            <div style={{fontWeight: '600', fontSize: '17px', marginBottom: '1%' }}>
-                Trip Information
+            <div className="room-container">
+                {rooms.map((room, index) => (
+                    <div key={index} className="room-card">
+                        <div className="room-content">
+                            <h2 className="room-title">{room.name}</h2>
+                            <div className="room-images">
+                                {room.images.slice(0, 3).map((image, idx) => (
+                                    <img key={idx} src={image} alt={`Room view ${room.name}`} />
+                                ))}
+                            </div>
+                            <a href="#" className="details-link">More Details »</a>
+                            <div className="price-info">
+                                ${room.price} per Day / Room
+                            </div>
+                            <button className="reserve-button" onClick={() => handleReservation(index)}>Reserve</button>
+                        </div>
+                    </div>
+                ))}
             </div>
-            <div style={{ fontWeight: '600' }}>
-                Room
-            </div>
-            <div style={{ display: 'flex' }}>
-                <div style={{ display: 'flex', flexDirection: 'column', marginTop: '1%' }}>
-                    <label style={{ marginBottom: '7%'}}>Check-In</label>
-                    <label style={{ fontWeight: '600', marginTop: '1%' }}>{new Date(hotel.checkin_at).toDateString()}</label>
-                </div>
-                <div style={{ marginTop: '2%', marginLeft: '3%' }}>
-                    →
-                </div>
-                <div style={{ display: 'flex', flexDirection: 'column', marginTop: '1%', marginLeft: '3.5%' }}>
-                    <label style={{ marginBottom: '7%'}}>Check-Out</label>
-                    <label style={{ fontWeight: '600', marginTop: '1%' }}>{new Date(hotel.checkout_at).toDateString()}</label>
-                </div>
-            </div>
-            <div style={{ width: '60%', display: 'flex', flexDirection: 'column', marginTop: '1%', fontSize: '15px' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between'}}>
-                    <label>Hotel Agreement/Confirmation #</label>
-                    <label>{hotel.agreement_number}</label>
-                </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '1.5%', fontSize: '15px'}}>
-                    <label>Guests</label>
-                    <label>{`${hotel.rooms_data[0].guest_data.guests['[0][first_name]']} ${hotel.rooms_data[0].guest_data.guests['[0][last_name]']}`}</label>
-                </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '1.5%', fontSize: '15px'}}>
-                    <label>Email</label>
-                    <label>{hotel.user_data.email}</label>
-                </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '1.5%', fontSize: '15px'}}>
-                    <label>Mobile</label>
-                    <label>{hotel.user_data.phone}</label>
-                </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '1.5%', fontSize: '15px'}}>
-                    <label>Nights</label>
-                    <label>{hotel.nights}</label>
-                </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '1.5%', fontSize: '15px' }}>
-                    <label>Booking/Order ID</label>
-                    <label>{hotel.order_id}</label>
-                </div>
-                <div style={{fontWeight: '600', fontSize: '17px', marginBottom: '1.5%', marginTop: '2.5%' }}>
-                    Room Information
-                </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '15px'}}>
-                    <label>Room Type</label>
-                    <label>{hotel.rooms_data[0].room_name}</label>
-                </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '1.5%', fontSize: '15px'}}>
-                    <label>Board Basics</label>
-                    <label>{hotel.rooms_data[0].meal_name}</label>
-                </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '1.5%', fontSize: '15px' }}>
-                    <label>Rooms</label>
-                </div>
-                <div style={{fontWeight: '600', fontSize: '17px', marginBottom: '1.5%', marginTop: '2.5%' }}>
-                    Summary of Charges
-                </div>
-                <div style={{fontWeight: '600', fontSize: '15px', display: 'flex', justifyContent: 'space-between' }}>
-                    <label>Booking Cost</label>
-                    <label>{`$${hotel.amount_payable.amount}`}</label>
-                </div>
-                <div style={{ fontSize: '10px', marginTop: '1%' }}>
-                    <label>Payment has been made for the full amount of the reservation; 
-                        however, the guest may provide a valid credit card upon check in
-                        for any incidentals. Please be advised the hotel may place
-                        a pre-authorization on this card that will be released upon checkout. </label>
-                </div>
-                <div style={{ marginTop: '1%' }}>
-                    <label>*Insert Refund Policy Here*</label>
-                </div>
-            </div>
-        </div>
-    );
+        </>
+    );    
 };
 
-export default HotelDetails;
+export default HotelPage;

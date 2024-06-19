@@ -1,7 +1,7 @@
 import ReviewBooking from "../components/ReviewBooking";
 
-const ReviewBooking = () => {
+const BookingReview = () => {
     return <ReviewBooking />
 };
 
-export default ReviewBooking;   
+export default BookingReview;   

@@ -1,6 +1,7 @@
 import { useRouter } from 'next/router';
 import axios, { AxiosResponse } from 'axios';
 import React, { useEffect, useState } from 'react';
+import Image from 'next/image';
 import { v4 as uuid } from 'uuid';
 import '../styles/App.css';
 
@@ -34,18 +35,13 @@ interface HotelRoom {
     "type": string;
 }
 
-interface HotelDetails {
-    "room": HotelRoom,
-    "params": HotelPage,
-    "specifics": HotelSpecifics
-}
-
 interface BookingResponse { 
     "partnerID": string, 
     "objectID": string, 
     "pUUID": string,
     "credit": boolean,
-    "userName": string[]
+    "userName": string[],
+    "confirmation": string
 };
 
 interface CoreData {
@@ -81,7 +77,6 @@ const dummyHotelSelected: HotelPage = {
 
 const dummyProps = {
     reviews: 60,
-    bookFor: '7 nights, 1 adults',
     taxes: '$232',
     refund: 'Non-Refundable',
     cancellation: '...'
@@ -89,11 +84,10 @@ const dummyProps = {
 
 const ReviewBooking: React.FC = () => {
     const router = useRouter();
-    const { id } = router.query;
     const [hotel, setHotel] = useState<HotelPage>(dummyHotelSelected);
     const [booking, setBooking] = useState<string>("");
     const [status, setStatus] = useState<string>("");
-    const [cancel, setCancel] = useState<string>("");
+    const [user, setUser] = useState<string>("");
     const [room, setRoom] = useState<HotelRoom>({
         name: "",
         price: 0,
@@ -120,6 +114,7 @@ const ReviewBooking: React.FC = () => {
         description: "",
     });
     const [pid, setPid] = useState<string>("");
+    const [orderID, setOrderID] = useState<string>("");
     const [dataCore, setDataCore] = useState<CoreData>({
         "year": "", // || "18"
         "card_number": "", // || "4111111111111111"
@@ -127,49 +122,49 @@ const ReviewBooking: React.FC = () => {
         "month": "" // || "05"
     });
     const [cvcNum, setCvcNum] = useState<string>("");
-
     useEffect(() => {
-        const searchParams = new URLSearchParams(window.location.search);
-        const data = searchParams.get('details');
-        if (data) {
-            const hotelDetails: HotelDetails = JSON.parse(data);
-            const { room, params, specifics } = hotelDetails;
-            setRoom(room);
-            setParameters(params);
-            setSpecifics(specifics);
+        const room = localStorage.getItem('currentRoom');
+        const params = localStorage.getItem('searchParams');
+        const specifics = localStorage.getItem('currentHotelData');
+        if (room && params && specifics) {
+            setRoom(JSON.parse(room));
+            setParameters(JSON.parse(params));
+            setSpecifics(JSON.parse(specifics));
         };
         setBooking("");
         setStatus("");
-    }, [])
+    }, []);
 
     const handleBooking = async (): Promise<void> => {
         try {
             setStatus('Please wait a moment.');
             const bookCall: AxiosResponse<{ status: string, data: BookingResponse }> = await axios.post('http://localhost:5001/booking/create', {
-                id: specifics.id || "test_hotel_do_not_book",
-                checkin: parameters.checkin || dummyHotelSelected.checkin,
-                checkout: parameters.checkout || dummyHotelSelected.checkout,
-                guests: dummyHotelSelected.guests || [
-                        {
-                            "adults": parameters.guests[0].adults,
-                            "children": [parameters.guests[0].children.length]
-                        }
-                    ],
-                currency: dummyHotelSelected.currency,
-                language: dummyHotelSelected.language
+                id: "test_hotel_do_not_book" || specifics.id,
+                checkin: parameters.checkin,
+                checkout: parameters.checkout,
+                guests: [
+                    {
+                        "adults": parameters.guests[0].adults,
+                        "children": parameters.guests[0].children.length && [parameters.guests[0].children.length] || [] 
+                    }
+                ],
+                currency: parameters.currency,
+                language: parameters.language
                 }, 
-                { headers:{"Content-Type" : "application/json"},
-                withCredentials: true
-            });
+                { headers: {"Content-Type" : "application/json"},
+                withCredentials: true }
+            );
             const { status, data } = bookCall.data;
             setBooking(status);
             setStatus('Finalizing...');
-            const { partnerID, objectID, pUUID, credit, userName } = data;
-            await creditTokenization(objectID, pUUID, credit, userName)
-            // if (credit) { 
-            //     await creditTokenization(objectID, pUUID, cvc, userName)
-            // };
+            const { partnerID, objectID, pUUID, credit, userName, confirmation } = data;
+            setUser(userName.join(' '));
+            setOrderID(confirmation);
             await handleStatus(partnerID);
+            if (credit) { 
+                await creditTokenization(objectID, pUUID, credit, userName)
+            };
+            seeConfirm(partnerID, userName.join(' '), confirmation);
         } catch (e) {
             console.error(e);
         };
@@ -186,9 +181,8 @@ const ReviewBooking: React.FC = () => {
                 withCredentials: true
             });
             const { status, data } = statusCall.data;
-            if (data == 'ok') {
-                setStatus(status)
-                // seeConfirm(partner);
+            if (data =='ok') {
+                setStatus(status);
             };
         } catch (e) {
             console.error(e);
@@ -204,10 +198,6 @@ const ReviewBooking: React.FC = () => {
         }));
     };
 
-    const handleTokenChange = (args: any) => {
-
-    };
-
     const creditTokenization = async (itemID: string, payUID: string, code: boolean, name: string[]) => {
         const initUUID: string = uuid();
         const body: TokenFormat = {
@@ -220,7 +210,6 @@ const ReviewBooking: React.FC = () => {
             "is_cvc_required": code,
             "credit_card_data_core": dataCore
         };
-        console.log(body);
         const creditCall: AxiosResponse<{ status: string, data: string }> = await axios.post('http://localhost:5001/booking/credit', 
             body, 
             { headers: { 'Content-Type': 'application/json' }, 
@@ -228,24 +217,15 @@ const ReviewBooking: React.FC = () => {
         });
         const { status, data } = creditCall.data;
         if (data == 'ok') {
-            console.log(status);
+            setStatus(status);
+            seeConfirm(pid, user, orderID);
         };
     };
 
-    const seeConfirm = (partner?: string): void => {
-        const sendObj = { ...dummyProps, ...dummyHotelSelected, pID: pid || partner };
+    const seeConfirm = (partner?: string, name?: string, confirm?: string): void => {
+        const sendObj = { pID: pid || partner, userName: name, confirmNum: confirm };
         const objectString = JSON.stringify(sendObj);
         router.push(`/confirmation/?details=${encodeURIComponent(objectString)}`)
-    };
-
-    const handleCancellation = async (): Promise<void | null> => {
-        setCancel('Processing...');
-        const cancelCall: AxiosResponse<{ status: string, data: string }> = await axios.delete('http://localhost:5001/booking/cancel', {
-            headers: { 'Content-Type': 'application/json' ,'pID': pid },
-            withCredentials: true
-        });
-        const result = cancelCall.data;
-        setCancel(result.status);
     };
 
     //getInitialProps()
@@ -261,22 +241,28 @@ const ReviewBooking: React.FC = () => {
                 marginTop: '2%',
                 borderStyle: 'solid'
                 }}>
-                    <div className='review-hotel'>
-                        <label>{specifics.id.replace(/_/g, ' ').replace(/\b\w/g, (char) => char.toUpperCase())}</label>
+                    <div style={{ display: 'flex'}}>
+                        <div style={{ padding: '1%'}}>
+                            <Image src={specifics.images[0].replace('{size}', '200x200')} alt='hotel image' width={200} height={200} />
+                        </div>
+                        <div style={{ display: 'flex', flexDirection: 'column' }}>
+                            <div className='review-hotel'>
+                                <label>{specifics.id.replace(/_/g, ' ').replace(/\b\w/g, (char) => char.toUpperCase())}</label>
+                            </div>
+                            <div style={{ padding: '1%', marginBottom: '0.5%' }}>
+                                <label>{Array(specifics.starRating).fill('⭐').join('')}</label>
+                                <label> | {dummyProps.reviews} reviews</label>
+                            </div>
+                            <div className='arbitrary'>
+                                <label>{specifics.address}</label>
+                            </div>
+                            <div style={{ padding: '1%', marginBottom: '5%', marginLeft: '41%', marginTop: '10%', width: '140%' }}>
+                                <label>{room.type}</label>
+                            </div>
+                        </div>
                     </div>
-                    <div style={{ padding: '1%', marginBottom: '0.5%' }}>
-                        <label>{Array(specifics.starRating).fill('⭐').join('')}</label>
-                        <label> | {dummyProps.reviews} reviews</label>
-                    </div>
-                    <div className='review-hotel'>
-                        <label>{specifics.address}</label>
-                        <label>O km from center</label>
-                    </div>
-                    <div style={{ padding: '1%', marginBottom: '5%', marginLeft: '41%' }}>
-                        <label>{room.type}</label>
-                    </div>
-                    <div className='review-hotel'>
-                        {specifics.amenities.map(feat => (
+                    <div className='amenities'>
+                        {specifics.amenities.slice(0, 20).map(feat => (
                             <label>{feat}</label>
                         ))}
                     </div>
@@ -313,7 +299,7 @@ const ReviewBooking: React.FC = () => {
                                 Booking For:
                             </div>
                             <div style={{ color: 'navy', fontWeight: '600' }}>
-                                {dummyProps.bookFor}
+                                {parameters.guests[0].adults} Adults, {parameters.guests[0].children.length} Children
                             </div>
                         </div>
                     </div>
@@ -398,8 +384,6 @@ const ReviewBooking: React.FC = () => {
                     <button style={{ width: '93.5%', marginTop: '3.5%'}} onClick={() => handleBooking()}>Book Now</button>
                     <label>{booking}</label>
                     <label>{status}</label>
-                    <button onClick={() => handleCancellation()}>Cancel {cancel}</button>
-                    <button onClick={() => creditTokenization('hi', 'yo', true)}>Click Me</button>
                 </div>
             </div>
             <div style={{ top: '10.1%', 
@@ -419,16 +403,16 @@ const ReviewBooking: React.FC = () => {
                     <label>Description</label>
                 </div>
                 <div style={{ padding: '1%', marginTop: '1%', marginBottom: '2%' }}>
-                    <label>Room 1 {dummyProps.roomType}</label>
+                    <label>Room: {room.type}</label>
                 </div>
                 <div style={{ padding: '1%', marginTop: '1%', display: 'flex', justifyContent: 'space-between', marginBottom: '2%' }}>
                     <label>Retail Price:</label>
-                    <label>{dummyProps.price}</label>
+                    <label>{room.price}</label>
                 </div>
                 <hr />
                 <div style={{ padding: '1%', marginTop: '1%', display: 'flex', justifyContent: 'space-between', marginBottom: '2%' }}>
                     <label>Booking Cost:</label>
-                    <label>{dummyProps.price}</label>
+                    <label>${specifics.price}</label>
                 </div>
                 <div style={{ padding: '1%', marginTop: '1%', display: 'flex', justifyContent: 'space-between', marginBottom: '2%' }}>
                     <label>Taxes and Fees:</label>
@@ -438,6 +422,11 @@ const ReviewBooking: React.FC = () => {
                 <div style={{ padding: '1%', marginTop: '1%', display: 'flex', justifyContent: 'space-between', marginBottom: '2%' }}>
                     <label>To Pay:</label>
                     <label>{`$${Number(room.price) + Number(dummyProps.taxes.slice(1))}`}</label>
+                </div>
+                <div style={{ padding: '1%', marginTop: '1%', display: 'flex', justifyContent: 'space-between', marginBottom: '2%' }}>
+                    <input placeholder='Guest Name' onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                        setUser(e.target.value)
+                    }}/>
                 </div>
             </div>
         </div>
