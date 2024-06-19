@@ -84,6 +84,6 @@ export class Components {
 
 export class Details { 
     hotel: string;
-    name: string;
-    list: Array<Order>
+    list: Array<Order>;
+    name: string
   }

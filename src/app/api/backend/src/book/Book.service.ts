@@ -1,22 +1,24 @@
 import { HttpService } from "@nestjs/axios";
 import { ConfigService } from "@nestjs/config";
 import { firstValueFrom } from "rxjs";
+import { map } from 'rxjs/operators';
 import { Page, PageData, Rates, RatesData, Status, FinalSchema, TokenFormat } from "./book.dto";
 import { v4 as uuid } from 'uuid';
 import { Injectable } from "@nestjs/common";
 
 @Injectable()
 export class BookService {
-    constructor(
-        private readonly httpService: HttpService,
-        private configService: ConfigService
-    ) {}
     private credentials = `${this.configService.get<string>('KEY_ID')}:${this.configService.get<string>('API_KEY')}`;
     private authHeader = 'Basic ' + Buffer.from(this.credentials).toString('base64');
     private headers = {
         'Content-Type': 'application/json', 
         'Authorization': this.authHeader,
     };
+    
+    constructor(
+        private readonly httpService: HttpService,
+        private configService: ConfigService
+    ) {}
 
     async bookingForm(hash: string, ipAddress: string): Promise<{ratesList: RatesData, payUUID: string }> {
         const UUID: string = uuid()
@@ -32,7 +34,7 @@ export class BookService {
             { headers: this.headers }
         ));
         return {ratesList: data.data, payUUID: UUID };
-    }
+    };
 
     async bookingFinish(rates: RatesData, 
         firstName: string, 
@@ -73,7 +75,8 @@ export class BookService {
         ));
         return data.status == 'ok' && { creditNeeded: paymentInfo.is_need_credit_card_data, 
             cvcNeeded: paymentInfo.is_need_cvc, 
-            pID: partnerInfo };
+            pID: partnerInfo,
+            confirmation: rates.order_id };
     };
 
     async bookingStatus(pID: string): Promise<string> {
@@ -114,7 +117,7 @@ export class BookService {
     async getInfo(args: any): Promise<string> {
         const { data } = await firstValueFrom(this.httpService.post<Page>(
             'https://api.worldota.net/api/b2b/v3/search/hp/', 
-            {...args}, 
+            args, 
             { headers: this.headers }
         ));
         const response: PageData = data.data;

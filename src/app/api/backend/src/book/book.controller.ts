@@ -33,7 +33,7 @@ export class BookController {
       };
       const apiCall: string = await this.bookService.bookingStatus(partnerID);
       return response.status(HttpStatus.OK).json({
-          status: 'Awaiting credit card verification.',
+          status: 'Awaiting confirmation...',
           data: apiCall
         });
     } catch (e) {
@@ -70,7 +70,8 @@ export class BookController {
           objectID: ratesList.item_id, 
           pUUID: payUUID,
           credit: apiCall.creditNeeded,
-          userName: [first, last] }
+          userName: [first, last],
+          confirmation: apiCall.confirmation }
       });
     } catch (e) {
       return response.status(HttpStatus.INTERNAL_SERVER_ERROR).json({ error: e })

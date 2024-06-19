@@ -3,18 +3,23 @@ import { firstValueFrom } from 'rxjs';
 import { HttpService } from '@nestjs/axios';
 import { Components, Order } from './orders.dto';
 import { ConfigService } from '@nestjs/config';
+import NodeCache from 'node-cache';
 
 @Injectable()
 export class ResService {
-  constructor(private readonly httpService: HttpService,
-    private configService: ConfigService
-  ) {}
   private credentials = `${this.configService.get<string>('KEY_ID')}:${this.configService.get<string>('API_KEY')}`;
   private authHeader = 'Basic ' + Buffer.from(this.credentials).toString('base64');
   private headers = {
     'Content-Type': 'application/json', 
     'Authorization': this.authHeader,
   };
+  private cache: NodeCache;
+
+  constructor(private readonly httpService: HttpService,
+    private configService: ConfigService
+  ) {
+    this.cache = new NodeCache({ stdTTL: 300, checkperiod: 90 })
+  }
   
   private bodyData = {
     "ordering": {
@@ -39,6 +44,17 @@ export class ResService {
       { headers: this.headers })
     );
     const response: Array<Order> = data.data.orders;
+    this.cache.set('list', response, 0);
     return response;
-  }
-}
+  };
+
+  see (): Array<Order> {
+    const result = this.cache.get<Array<Order>>('list');
+    return result
+  };
+
+  flush (): void {
+    this.cache.flushAll();
+  };
+
+};

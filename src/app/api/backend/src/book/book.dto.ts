@@ -13,6 +13,7 @@ export class Page {
 
 export class RatesData {
     item_id: string;
+    order_id: string;
     partner_order_id: string;
     payment_types: {
       amount: string;
@@ -47,6 +48,7 @@ export class FinalSchema {
   creditNeeded: boolean;
   cvcNeeded: boolean;
   pID: string;
+  confirmation: string;
 };
 
 class CoreData {

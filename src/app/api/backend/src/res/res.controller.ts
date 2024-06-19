@@ -1,6 +1,7 @@
 import {
   Controller,
   Get,
+  Delete,
   Query,
   Req,
   Res,
@@ -43,19 +44,22 @@ export class ResController {
     } catch (e) {
       return response.status(HttpStatus.INTERNAL_SERVER_ERROR).json({ error: e })
     };
-  }
+  };
 
   @Get('details')
   @HttpCode(200)
-  async hotelInfo(@Query() info: Details, 
+  async information(@Query() info: Details, 
   @Res() response: Response): Promise<Response> {
     try {
-      const { hotel, list } = info;
-      if (!hotel || !list) {
-        return response.status(HttpStatus.BAD_REQUEST);
-      }
-      const single: Order = list.filter((order: Order) => {
-        return (order.invoice_id == hotel);
+      const { hotel, name } = info;
+      const apiCall: Array<Order> = this.appService.see();
+      const single: Order = apiCall.filter((order) => {
+        const guestInfo = order.rooms_data[0].guest_data.guests[0];
+        return (
+          name.toLowerCase() ==
+          `${guestInfo.first_name} ${guestInfo.last_name}`.toLowerCase() && 
+          order.invoice_id == hotel
+        );
       })[0];
       return response.status(HttpStatus.OK).json({
         status: 'success',
@@ -65,4 +69,11 @@ export class ResController {
       return response.status(HttpStatus.INTERNAL_SERVER_ERROR).json({ error: e })
     };
   };
+
+  @Delete('clear')
+  @HttpCode(204)
+  clearCache () {
+    this.appService.flush();
+  };
+
 };

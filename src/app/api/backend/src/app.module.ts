@@ -6,6 +6,8 @@ import { ConfigModule } from '@nestjs/config';
 import { JwtModule } from '@nestjs/jwt';
 import { BookController } from './book/book.controller';
 import { BookService } from './book/Book.service';
+import { HotelsController } from './hotels/hotels.controller';
+import { HotelsService } from './hotels/hotels.service';
 
 @Module({
   imports: [
@@ -17,7 +19,7 @@ import { BookService } from './book/Book.service';
       isGlobal: true,
     })
   ],
-  controllers: [ResController, BookController],
-  providers: [ResService, BookService],
+  controllers: [ResController, BookController, HotelsController],
+  providers: [ResService, BookService, HotelsService],
 })
 export class AppModule {}
