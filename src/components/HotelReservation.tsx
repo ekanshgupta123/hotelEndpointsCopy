@@ -45,22 +45,16 @@ interface Components {
     amount_payable_vat: { amount: string, currency_code: string },
     amount_payable_with_upsells: { amount: string, currency_code: string },
     amount_refunded: { amount: string, currency_code: string },
-    amount_sell: { amount: string, currency_code: string },
     amount_sell_b2b2c: { amount: string, currency_code: string },
     api_auth_key_id: null,
     cancellation_info: { free_cancellation_before: null, policies: Policies[] },
     cancelled_at: null,
     checkin_at: string,
     checkout_at: string,
-    contract_slug: string,
-    created_at: string,
-    has_tickets: boolean,
-    hotel_data: { id: string, order_id: null },
+    hotel_data: { id: string, order_id: string },
     invoice_id: string,
     is_cancellable: boolean,
     is_checked: boolean,
-    meta_data: { voucher_order_comment: null },
-    modified_at: string,
     nights: number,
     order_id: number,
     order_type: string,
@@ -76,14 +70,16 @@ interface Components {
     },
     roomnights: number,
     rooms_data: RoomData[],
-    source: string,
     status: string,
     supplier_data: { confirmation_id: null, name: null, order_id: string },
     taxes: TaxAmount[],
-    total_vat: { amount: string, currency_code: string, included: boolean },
-    upsells: [],
-    user_data: { arrival_datetime: null, email: string, user_comment: null }
-  };
+    user_data: { arrival_datetime: null, email: string, user_comment: null },
+    address: string,
+    images: string[],
+    star_rating: string,
+    latitude: string, 
+    longitutde: string
+  }
 
 const Reservation: React.FC = () => {
     const router = useRouter();
@@ -158,7 +154,7 @@ const Reservation: React.FC = () => {
     const sideItinerary = () => {  
         if (details && !retrieving) {
             return (
-                <div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '15px', marginTop: '-25%' }}>
                     <h3>Trip Details:</h3>
                     <div className='itin-items'>
                         <p>Hotel:</p>
@@ -215,9 +211,9 @@ const Reservation: React.FC = () => {
                 <div className='above-columns'>
                     <label className='item-label'>Guests</label>
                     <label className='item-label'>Day In</label>
-                    <label className='item-label'>Day Out</label>
+                    <label style={{ marginRight: '10%' }}>Day Out</label>
                     <label className='item-label'>Hotel</label>
-                    <label className='item-label'>Nights</label>
+                    <label>Nights</label>
                 </div>
                 {reservations.map(order => (
                     <div className='columns' onClick={() => {

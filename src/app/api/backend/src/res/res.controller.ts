@@ -35,6 +35,7 @@ export class ResController {
         return (
           name.toLowerCase() ==
           `${guestInfo.first_name} ${guestInfo.last_name}`.toLowerCase()
+           && order.hotel_data.id != "test_hotel_do_not_book" || "test_hotel"
         );
       });
       return response.status(HttpStatus.OK).json({

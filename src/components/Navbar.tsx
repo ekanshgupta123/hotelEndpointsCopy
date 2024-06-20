@@ -1,11 +1,12 @@
 import React from "react";
+import pic from './checkins.png'
 import './Navbar.css'
 import Image from 'next/image'
 
 const Navbar = () => {
     return (
         <header className="header">
-            <a href="/" className="logo">Hotel Checkins</a>
+            <Image src={pic} width={200} height={60} alt="Logo Pic"/>
             <nav className="navbar">
                 <a href="/booking">Find Hotel</a>
                 <a href="/reservation">My Trips</a>

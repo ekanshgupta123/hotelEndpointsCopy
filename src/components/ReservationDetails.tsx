@@ -48,7 +48,6 @@ interface Components {
     amount_payable_vat: { amount: string, currency_code: string },
     amount_payable_with_upsells: { amount: string, currency_code: string },
     amount_refunded: { amount: string, currency_code: string },
-    amount_sell: { amount: string, currency_code: string },
     amount_sell_b2b2c: { amount: string, currency_code: string },
     api_auth_key_id: null,
     cancellation_info: { free_cancellation_before: null, policies: Policies[] },
@@ -97,6 +96,7 @@ const ReservationDetails: React.FC = () => {
                 withCredentials: true }
             );  
             const { address, images, star_rating, latitude, longitude } = info.data.data;
+            console.log(images);
             hotelData.address = address;
             hotelData.images = images;
             hotelData.star_rating = star_rating;
@@ -115,29 +115,8 @@ const ReservationDetails: React.FC = () => {
         preRender();
     }, []);
 
-    // const libraries = useMemo(() => ['places'], []);
-
-    // const mapCenter = useMemo(
-    //     () => ({ lat: hotel?.latitude, lng: hotel?.longitutde }),
-    //     []
-    //   );
-
-    // const mapOptions = useMemo<google.maps.MapOptions>(
-    //     () => ({
-    //     disableDefaultUI: true,
-    //     clickableIcons: true,
-    //     scrollwheel: false,
-    //     }),
-    //     []
-    // );
-
-    // const { isLoaded } = useLoadScript({
-    //     googleMapsApiKey: process.env.mapsKey as string,
-    //     libraries: libraries as any,
-    // });
-
     const containerStyle = {
-        width: '20%%',
+        width: '40%%',
         height: '80%'
       };
       
@@ -168,7 +147,10 @@ const ReservationDetails: React.FC = () => {
             <div style={{ padding: '2%', width: '60%' }}>
                 <a href='/reservation/list'>{'< Return to Trips'}</a>
                     <div style={{ display: 'flex', marginTop: '1%', marginBottom: '1.5%' }}>
-                        <Image src={hotel.images && hotel.images[0].replace('{size}', '200x200') || pic} width={120} height={120} alt='img' />
+                        {hotel.images.length > 0 && 
+                        <Image src={hotel.images[0].replace('{size}', '200x200')} width={120} height={120} alt='img' /> ||
+                        <Image src={pic} width={140} height={40} alt='No images available.' />
+                        }
                         <div style={{ display: 'flex', flexDirection: 'column', marginLeft: '1%' }}>
                             <label>{hotel.hotel_data.id.replace(/_/g, ' ').replace(/\b\w/g, (char) => char.toUpperCase())}</label>
                             <label>{hotel.address}</label>
@@ -273,8 +255,7 @@ const ReservationDetails: React.FC = () => {
                         <GoogleMap
                             mapContainerStyle={containerStyle}
                             center={center}
-                            zoom={10}
-                        >
+                            zoom={10}>
                             <Marker position={center} />
                         </GoogleMap>
                     </LoadScript>
