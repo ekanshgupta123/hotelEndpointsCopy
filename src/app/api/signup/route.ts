@@ -22,6 +22,7 @@ export async function POST(req: Request) {
     if (!name || !email || !password) {
         return NextResponse.json({ msg: "invalid fields" }, { status: 400 })
     }
+    localStorage.setItem('userButton', name);
     connection()
     const isUserAlreadyPresent = await User.findOne({ email });
     if (isUserAlreadyPresent) {

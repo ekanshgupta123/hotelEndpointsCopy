@@ -19,7 +19,7 @@ const Signup = () => {
       email, password, name
     }).then(res => {
       console.log(res);
-      router.push('/login');
+      router.push('/booking');
     }).catch(err => {
       if (err.response && err.response.status === 409) {
         setError("User already exists. Please try logging in.");

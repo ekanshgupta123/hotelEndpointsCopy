@@ -108,8 +108,8 @@ const Confirm = () => {
     return (
         <div style={{ transform: 'scale(0.85)', height: '30%', fontFamily: "gill sans" }}>
             <a style={{ marginLeft: '5%' }} onClick={() => {
-                router.push(`/hotel/details/${id}`)
-            }}>{'< Booking Details'}</a>
+                router.push(`/hotel/${id}`)
+            }}> {'<'} Search {specifics.id.replace(/_/g, ' ').replace(/\b\w/g, (char) => char.toUpperCase())} hotels</a>
             <div style={{ marginLeft: '5%', marginTop: '4%' }}>
                 <div style={{ display: 'flex', 
                 flexDirection: 'column', 

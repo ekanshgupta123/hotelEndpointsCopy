@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
 import '../styles/HotelDisplay.css';
+import Navbar from './Navbar';
 import axios from 'axios';
 
 interface HotelDetails {
@@ -84,7 +85,7 @@ const HotelPage = () => {
             const hashmap: { [key: string]: string } = {};
 
             try {
-                const response = await axios.post("http://localhost:3002/hotels/rooms", body);
+                const response = await axios.post("http://localhost:5001/hotels/rooms", body);
                 const hotelsData = response.data.data.hotels;
                 if (hotelsData.length > 0) {
                     console.log('API response hotelsData:', hotelsData); // Log the response data
@@ -138,6 +139,10 @@ const HotelPage = () => {
         <>
             <div className="hotel-container">
                 <div className="hotel-header">
+                    <div style={{ scale: '2.5' }}>
+                        <a href='/booking' style={{ marginRight: '2%' }}>⌂</a>
+                        <a href='/reservation/list' style={{ marginRight: '2%' }}>❐</a>
+                    </div>
                     <h1>{hotelData.name}</h1>
                     <p className="subtitle">{hotelData.address}</p>
                     <div className="rating">{hotelData.starRating} Stars</div>

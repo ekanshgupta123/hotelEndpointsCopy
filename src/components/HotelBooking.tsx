@@ -218,7 +218,7 @@ const Search = () => {
     
         try {
             console.log(body);
-            const response = await maxRPS.post("http://localhost:3002/hotels/search", body, {
+            const response = await maxRPS.post("http://localhost:5001/hotels/search", body, {
                 cancelToken: cancelTokenRef.current.token
             });
             console.log("Response: " , response);
@@ -266,7 +266,7 @@ const Search = () => {
             await delay(index * 65 + 500 * (attempt - 1));
             console.log(`Attempting to fetch details for ${hotelId}, attempt ${attempt}`);
             
-            const response = await axios.post(`http://localhost:3002/hotels/details`, {
+            const response = await axios.post(`http://localhost:5001/hotels/details`, {
                 id: hotelId,
                 language: "en"
             });

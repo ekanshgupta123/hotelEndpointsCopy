@@ -225,7 +225,7 @@ const ReviewBooking: React.FC = () => {
     const seeConfirm = (partner?: string, name?: string, confirm?: string): void => {
         const sendObj = { pID: pid || partner, userName: name, confirmNum: confirm };
         const objectString = JSON.stringify(sendObj);
-        router.push(`/confirmation/${id}?details=${encodeURIComponent(objectString)}`)
+        router.push(`/confirmation/?details=${encodeURIComponent(objectString)}`)
     };
 
     return (
