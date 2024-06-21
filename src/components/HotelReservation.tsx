@@ -1,5 +1,5 @@
 import { useRouter } from 'next/router';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import axios, { AxiosResponse } from 'axios'
 import Navbar from './Navbar'
 import '../styles/App.css'
@@ -83,42 +83,92 @@ interface Components {
 
 const Reservation: React.FC = () => {
     const router = useRouter();
-    const [rendered, setRendered] = useState<boolean>(false)
     const [hotel, setHotel] = useState<string | null>(null);
-    const [user, setUser] = useState<string | null>(null)
+    const [user, setUser] = useState<string | null>(null);
+    const [pageNum, setPageNum] = useState<number>(1);
+    const [currNum, setCurrNum] = useState<number>(1);
     const [reservations, setReservations] = useState<Components[] | null>(null);
     const [details, setDetails] = useState<Components | null>(null);
-    const [retrieving, setRetrieving] = useState<boolean>(false)
-    const [scale, setScale] = useState<boolean>(false)
+    const [show, setShow] = useState<boolean>(false);
+    const [retrieving, setRetrieving] = useState<boolean>(false);
+    const [scale, setScale] = useState<boolean>(false);
+    const hasMounted = useRef(true);
+
+    const increment = () => {
+        setCurrNum(prevNum => prevNum + 1);
+    };
+
+    const flushCache = async () => {
+        await axios.delete('http://localhost:5001/reservation/clear', {
+            headers: { 'Content-Type': 'application/json' },
+            withCredentials: true
+        });
+        console.log('cleared');
+    };
+
+    const apiCall = async (currPage: number): Promise<Array<Components>> => {
+        try {
+            if (!reservations) {
+                await flushCache();
+            }
+            const request: AxiosResponse = await 
+            axios.get('http://localhost:5001/reservation/list', {
+                params: { pg: currPage },
+                headers: { 'Content-Type': 'application/json' },
+                withCredentials: true,
+            });
+            const { data } = request.data;
+            const { list, pages, user } = data;
+            console.log(list, currNum, pageNum, user);
+            setUser(user);  
+            if (pages > 1 || pageNum != pages) {
+                setPageNum(pages); 
+            };
+            if (!reservations) {
+                setReservations(list);
+            };
+            return list;
+        } catch (e) {
+            console.error(e)
+            return []
+        };
+    };
 
     useEffect(() => {
-        const apiCall = async (): Promise<void> => {
-            try {
-                const request: AxiosResponse = await 
-                axios.get('http://localhost:5001/reservation/list', {
-                  headers: { 'Content-Type': 'application/json' },
-                  withCredentials: true,
-                });
-                const { data } = request.data;
-                const { list, user } = data;
-                setReservations(list);
-                setUser(user);
-            } catch (e) {
-                console.error(e)
-            }
-        }
-        if (!rendered) {
-            apiCall();
-            setRendered(true);
-        }
-    }, [])
+        if (!hasMounted.current) {
+            hasMounted.current = true;
+            const initialLoad = async () => {
+                await apiCall(currNum);
+            };
+            initialLoad();
+            return
+        };
+        const wrapper = async () => {
+            const n = reservations?.length || 0;
+            const arr = await apiCall(currNum);
+            if (reservations && arr.length > n) {
+                console.log('check');
+                setReservations(arr);
+                setCurrNum(currNum);
+                setShow(false);
+                return
+            } else {  
+                if (currNum != pageNum) {
+                    increment();
+                };
+            };
+        };
+        wrapper();
+    }, [currNum])
+
+    console.log(user);
 
     useEffect(() => {
         const reservationLookup = async (): Promise<void> => {
             if (hotel) {
                 try {
                     const request: AxiosResponse = await axios.get('http://localhost:5001/reservation/details', {
-                        params: { hotel: hotel, name: user },
+                        params: { hotel: hotel },
                         headers: { 'Content-Type': 'application/json' },
                         withCredentials: true
                     });
@@ -135,14 +185,6 @@ const Reservation: React.FC = () => {
 
     if (!reservations) {
         return <div>Loading...</div>;
-    };
-
-    const flushCache = async () => {
-        await axios.delete('http://localhost:5001/reservation/clear', {
-            headers: { 'Content-Type': 'application/json' },
-            withCredentials: true
-        });
-        console.log('cleared');
     };
 
     const handleViewHotel = async () => {
@@ -208,6 +250,9 @@ const Reservation: React.FC = () => {
         <>
             <header><Navbar /></header>
             <div className={`reservation-container ${scale ? 'scale' : ''}`}>
+                <div style={{ marginBottom: '2%', marginTop: '-2%', marginLeft: '86.5%' }}>
+                    <button onClick={() => setScale(true)} style={{ backgroundColor: 'transparent', padding: '1%', borderStyle: 'dashed' }}>{'>> Toggle Side Itinerary'}</button>
+                </div>
                 <div className='above-columns'>
                     <label className='item-label'>Guests</label>
                     <label className='item-label'>Day In</label>
@@ -228,18 +273,18 @@ const Reservation: React.FC = () => {
                         <label style={{ maxWidth: '5px' }}>{order.nights}</label>
                     </div>
                 ))}
+                {currNum != pageNum && <button disabled={currNum == pageNum} style={{ backgroundColor: 'transparent', borderColor: 'transparent', color: 'navy'}} onClick={() => {
+                    setCurrNum(currNum + 1);
+                    setShow(true);
+                }}>Show More...</button>}
+                {show && <label>Loading...</label>}
             </div>
             {scale && 
             <div className='itin-tag'>
                 <div style={{ marginTop: '30%' }}>{sideItinerary() || <p>No Hotel Selected</p>}</div>
-                <button onClick={() => handleViewHotel()} style={{ marginTop: '5%' }}>View Full Itinerary</button>
-                <button onClick={() => setScale(false)} style={{ marginTop: '5%' }}>Close Itinerary</button>
+                <button onClick={() => handleViewHotel()} style={{ marginTop: '5%', marginRight: '45.7%', padding: '1%' }}>View Full Itinerary</button>
+                <button onClick={() => setScale(false)} style={{ marginTop: '5%', padding: '1%' }}>Close Itinerary</button>
             </div>}
-            <div>
-                <div>
-                    <button onClick={() => setScale(true)}>Toggle Side Itinerary</button>
-                </div>
-            </div>
         </>
     );
 };

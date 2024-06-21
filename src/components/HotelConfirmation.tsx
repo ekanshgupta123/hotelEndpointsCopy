@@ -1,6 +1,7 @@
 import React, {useState, useEffect } from "react"
 import axios, { AxiosResponse } from 'axios';
 import Image from 'next/image';
+import { useRouter } from "next/router";
 
 interface HotelSpecifics {
     "id": string;
@@ -40,6 +41,8 @@ interface Additional {
 
 
 const Confirm = () => {
+    const router = useRouter();
+    const { id } = router.query;
     const [cancelSelect, setCancelSelect] = useState<boolean>(true);
     const [cancel, setCancel] = useState<string>("");
     const [room, setRoom] = useState<HotelRoom>({
@@ -79,7 +82,6 @@ const Confirm = () => {
         if (objectPassed) {
             setAddData(JSON.parse(objectPassed));
         };
-        console.log(objectPassed)
         const room = localStorage.getItem('currentRoom');
         const params = localStorage.getItem('searchParams');
         const specifics = localStorage.getItem('currentHotelData');
@@ -105,7 +107,9 @@ const Confirm = () => {
 
     return (
         <div style={{ transform: 'scale(0.85)', height: '30%', fontFamily: "gill sans" }}>
-            <label style={{ marginLeft: '5%' }}>{'< Booking Details'}</label>
+            <a style={{ marginLeft: '5%' }} onClick={() => {
+                router.push(`/hotel/details/${id}`)
+            }}>{'< Booking Details'}</a>
             <div style={{ marginLeft: '5%', marginTop: '4%' }}>
                 <div style={{ display: 'flex', 
                 flexDirection: 'column', 

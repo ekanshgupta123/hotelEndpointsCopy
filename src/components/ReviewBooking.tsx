@@ -84,7 +84,7 @@ const dummyProps = {
 
 const ReviewBooking: React.FC = () => {
     const router = useRouter();
-    const [hotel, setHotel] = useState<HotelPage>(dummyHotelSelected);
+    const { id } = router.query
     const [booking, setBooking] = useState<string>("");
     const [status, setStatus] = useState<string>("");
     const [user, setUser] = useState<string>("");
@@ -225,10 +225,8 @@ const ReviewBooking: React.FC = () => {
     const seeConfirm = (partner?: string, name?: string, confirm?: string): void => {
         const sendObj = { pID: pid || partner, userName: name, confirmNum: confirm };
         const objectString = JSON.stringify(sendObj);
-        router.push(`/confirmation/?details=${encodeURIComponent(objectString)}`)
+        router.push(`/confirmation/${id}?details=${encodeURIComponent(objectString)}`)
     };
-
-    //getInitialProps()
 
     return (
         <div>
@@ -407,21 +405,17 @@ const ReviewBooking: React.FC = () => {
                 </div>
                 <div style={{ padding: '1%', marginTop: '1%', display: 'flex', justifyContent: 'space-between', marginBottom: '2%' }}>
                     <label>Retail Price:</label>
-                    <label>{room.price}</label>
+                    <label>{specifics.price}</label>
                 </div>
                 <hr />
                 <div style={{ padding: '1%', marginTop: '1%', display: 'flex', justifyContent: 'space-between', marginBottom: '2%' }}>
                     <label>Booking Cost:</label>
-                    <label>${specifics.price}</label>
-                </div>
-                <div style={{ padding: '1%', marginTop: '1%', display: 'flex', justifyContent: 'space-between', marginBottom: '2%' }}>
-                    <label>Taxes and Fees:</label>
-                    <label>{dummyProps.taxes}</label>
+                    <label>${room.price}</label>
                 </div>
                 <hr />
                 <div style={{ padding: '1%', marginTop: '1%', display: 'flex', justifyContent: 'space-between', marginBottom: '2%' }}>
                     <label>To Pay:</label>
-                    <label>{`$${Number(room.price) + Number(dummyProps.taxes.slice(1))}`}</label>
+                    <label>{`$${room.price}`}</label>
                 </div>
                 <div style={{ padding: '1%', marginTop: '1%', display: 'flex', justifyContent: 'space-between', marginBottom: '2%' }}>
                     <input placeholder='Guest Name' onChange={(e: React.ChangeEvent<HTMLInputElement>) => {

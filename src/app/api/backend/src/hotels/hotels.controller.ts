@@ -30,5 +30,4 @@ export class HotelsController {
             res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({ error: e.message });
         }
     }
-
 }

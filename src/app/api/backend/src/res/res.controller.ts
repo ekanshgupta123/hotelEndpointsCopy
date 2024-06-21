@@ -10,7 +10,7 @@ import {
 } from '@nestjs/common';
 import { ResService } from './res.service';
 import { JwtService } from '@nestjs/jwt';
-import { Order, Details } from './orders.dto';
+import { Order, Details, PageNum } from './orders.dto';
 import { Request, Response } from 'express';
 
 @Controller('reservation')
@@ -23,24 +23,16 @@ export class ResController {
   @Get('list')
   @HttpCode(200)
   async findAll(
-    @Req() request: Request,
-    @Res() response: Response,
-  ): Promise<Response> {
+    @Req() request: Request, @Query('pg') pgNum: number,
+    @Res() response: Response): Promise<Response> {
     try {
-      const apiCall: Array<Order> = await this.appService.getInfo();
+      console.log('here');
       const jwtToken: string = request.cookies['token'];
       const { name } = this.jwtService.decode(jwtToken);
-      const multiple: Array<Order> = apiCall.filter((order) => {
-        const guestInfo = order.rooms_data[0].guest_data.guests[0];
-        return (
-          name.toLowerCase() ==
-          `${guestInfo.first_name} ${guestInfo.last_name}`.toLowerCase()
-           && order.hotel_data.id != "test_hotel_do_not_book" || "test_hotel"
-        );
-      });
+      const apiCall: PageNum = await this.appService.getInfo(name, pgNum);
       return response.status(HttpStatus.OK).json({
         status: 'success',
-        data: { list: multiple, user: name },
+        data: { list: apiCall.list, pages: apiCall.pages, user: name },
       });
     } catch (e) {
       return response.status(HttpStatus.INTERNAL_SERVER_ERROR).json({ error: e })
@@ -49,22 +41,13 @@ export class ResController {
 
   @Get('details')
   @HttpCode(200)
-  async information(@Query() info: Details, 
+  async information(@Query('hotel') info: string, 
   @Res() response: Response): Promise<Response> {
     try {
-      const { hotel, name } = info;
-      const apiCall: Array<Order> = this.appService.see();
-      const single: Order = apiCall.filter((order) => {
-        const guestInfo = order.rooms_data[0].guest_data.guests[0];
-        return (
-          name.toLowerCase() ==
-          `${guestInfo.first_name} ${guestInfo.last_name}`.toLowerCase() && 
-          order.invoice_id == hotel
-        );
-      })[0];
+      const apiCall: Order = this.appService.see(info);
       return response.status(HttpStatus.OK).json({
         status: 'success',
-        data: single,
+        data: apiCall,
       });
     } catch (e) {
       return response.status(HttpStatus.INTERNAL_SERVER_ERROR).json({ error: e })

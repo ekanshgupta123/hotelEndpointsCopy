@@ -79,11 +79,15 @@ export class Order {
 
 
 export class Components {
-    data: { orders: Array<Order> }
+    data: { orders: Array<Order>, found_pages: number }
   }
 
 export class Details { 
-    hotel: string;
+    hotel?: string;
+    preArgs?: Array<Order>
+  };
+
+export class PageNum {
     list: Array<Order>;
-    name: string
-  }
+    pages?: number
+}

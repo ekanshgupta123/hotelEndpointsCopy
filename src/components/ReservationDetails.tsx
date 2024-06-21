@@ -96,7 +96,6 @@ const ReservationDetails: React.FC = () => {
                 withCredentials: true }
             );  
             const { address, images, star_rating, latitude, longitude } = info.data.data;
-            console.log(images);
             hotelData.address = address;
             hotelData.images = images;
             hotelData.star_rating = star_rating;
@@ -263,5 +262,6 @@ const ReservationDetails: React.FC = () => {
         </div>
     );
 };
-
+// Test cases:
+// If start_at = end_at = null it means that this particular cancellation policy has no time restrictions / is in effect all the time.
 export default ReservationDetails;

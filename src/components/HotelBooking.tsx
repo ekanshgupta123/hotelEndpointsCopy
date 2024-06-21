@@ -3,19 +3,16 @@ import { useRouter } from 'next/router';
 import '../styles/App.css';
 import Navbar from './Navbar'
 import HotelDisplay from './HotelDisplay';
+import { Alert } from '@mui/material';
 
 import axios, { CancelTokenSource }from 'axios';
 import rateLimit from 'axios-rate-limit';
 
-// Create an Axios instance
 const http = axios.create();
 
-
-// Apply rate limiting to your Axios instance
 const maxRequests = 1;
 const perMilliseconds = 1000; // 5 requests per second
 const maxRPS = rateLimit(http, { maxRequests, perMilliseconds });
-
 
 interface Child {
     age: number;
@@ -88,16 +85,12 @@ const Search = () => {
 
     const [suggestions, setSuggestions] = useState<any[]>([]);
     const [regionId, setRegionId] = useState<number | null>(null);
-    const [adults, setAdults] = useState(1);
     const [hotels, setHotels] = useState<{ id: string }[]>([]);
-    const[hotelId, setHotelId] = useState<any[]>([]);
     const router = useRouter();
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [hotelDetails, setHotelDetails] = useState<HotelDetails[]>([]);
     const [children, setChildren] = useState<Child[]>([]);
-
-
 
     
     interface Region {
@@ -163,6 +156,7 @@ const Search = () => {
         try {
             const response = await fetch("/api/search/proxy", requestOptions);
             const result = await response.json();
+            console.log("Result:", result);
     
             if (result.data && result.data.regions) {
                 const cities = result.data.regions.filter((region: any) => region.type === 'City');
@@ -223,10 +217,13 @@ const Search = () => {
 
     
         try {
-            const response = await maxRPS.post("http://localhost:5001/hotels/search", body, {
+            console.log(body);
+            const response = await maxRPS.post("http://localhost:3002/hotels/search", body, {
                 cancelToken: cancelTokenRef.current.token
             });
+            console.log("Response: " , response);
             if (response.data && response.data.data && response.data.data.hotels) {
+                console.log("Full response data:", response.data.data.hotels);
                 // response.data.data.hotels.forEach(async (hotel: { id: string }) => {
                 //     // console.log("Hotel ID:", hotel.id);
                 //     await fetchHotelDetails(hotel.id);
@@ -243,8 +240,9 @@ const Search = () => {
             }
         } catch (error) {
             if (axios.isAxiosError(error)) {
-                console.error('Error fetching hotels:', error.response ? error.response.data : 'Unknown error');
-                setError(`Failed to fetch hotels: ${error.response ? error.response.data : 'Unknown error'}`);
+                console.error('Error fetching hotels:', error);
+                const errorMessage = error.response ? error.response.data : error.message;
+                setError(`Failed to fetch hotels: ${errorMessage}`);
             } else {
                 console.error('Unexpected error:', error);
                 setError('An unexpected error occurred');
@@ -268,7 +266,7 @@ const Search = () => {
             await delay(index * 65 + 500 * (attempt - 1));
             console.log(`Attempting to fetch details for ${hotelId}, attempt ${attempt}`);
             
-            const response = await axios.post(`http://localhost:5001/hotels/details`, {
+            const response = await axios.post(`http://localhost:3002/hotels/details`, {
                 id: hotelId,
                 language: "en"
             });
@@ -287,6 +285,8 @@ const Search = () => {
                 main_name: data.room_groups.map((group: { name_struct: { main_name: any; }; }) => group.name_struct.main_name),
                 room_images: data.room_groups.map((group: { images: any}) =>  group.images.length > 0 ? group.images[0].replace('{size}', '240x240') : null)
             };
+            console.log("Detials: ", details);
+
             setHotelDetails(prevDetails => [...prevDetails, details]);
             console.log("Details for hotel", hotelId, details);
         } catch (error) {
@@ -306,21 +306,28 @@ const Search = () => {
             destination: region.name
         }));
         setRegionId(region.id);
+        console.log(region.id);
         setSuggestions([]);  
     };
 
 
     const onSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
+        if (!searchParams.destination || !searchParams.checkInDate || !searchParams.checkOutDate) {
+            setError("Please fill in all required fields.");
+            return;
+        }    
         setHotelDetails([]);
         setSearchParams({ ...searchParams });
         await searchHotels();
     };
+    const today = new Date().toISOString().split('T')[0];
+    const minCheckOutDate = searchParams.checkInDate ? new Date(new Date(searchParams.checkInDate).getTime() + 86400000).toISOString().split('T')[0] : today;
 
 
     return (
         <div className="main-wrapper">
-            {/* <header><Navbar /></header> */}
+            <header><Navbar /></header>
             <div className="search-container">
             <form className="search-form" onSubmit={onSubmit}>
                 <div className="form-row">
@@ -353,6 +360,7 @@ const Search = () => {
                         name="checkInDate"
                         value={searchParams.checkInDate}
                         onChange={handleInputChange}
+                        min={today}
                     />
                     <input
                         className="date-input"
@@ -360,6 +368,7 @@ const Search = () => {
                         name="checkOutDate"
                         value={searchParams.checkOutDate}
                         onChange={handleInputChange}
+                        min={minCheckOutDate}
                     />
                 <div className="input-group">
                         <span className="input-label">Adults</span>
@@ -373,19 +382,25 @@ const Search = () => {
                         <input type="text" readOnly value={children.length} aria-label="Children" />
                         <button onClick={incrementChildren}>+</button>
                     </div>
-                    <button type="submit" className="search-button">Search</button>
+                    <button type="submit" className="search-button" disabled={isLoading}> Search </button>
                 </div>
             </form>
             {isLoading && <p>Loading...</p>}
-            {error && <p>Error: {error}</p>}
+            {error && (
+                <Alert severity="error">
+                    Error: {error}
+                </Alert>
+            )}
             <div className="hotel-list-container">
             {hotelDetails.map((hotel) => (
-                <HotelDisplay key={hotel.id} hotel={hotel} searchParams={hotelSearchParams} />
+                <HotelDisplay key={hotel.id} hotel={hotel} searchParams = {hotelSearchParams}/>
             ))}
         </div>
             </div>
         </div>
     );
+    
+    
 }
 
 export default Search;
