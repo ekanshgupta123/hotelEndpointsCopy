@@ -21,7 +21,8 @@ export class ResService {
     this.cache = new NodeCache({ stdTTL: 300, checkperiod: 90 })
   };
 
-  async getInfo(name: string, pg: number): Promise<PageNum> {
+  async getInfo(name: string, pg: number): Promise<PageNum | { list: [], new: boolean }> {
+    console.log(pg);
     const bodyData = {
       "ordering": {
           "ordering_type": "desc",
@@ -43,7 +44,7 @@ export class ResService {
       bodyData, 
       { headers: this.headers })
     );
-    let multiple: Array<Order> = data.data.orders.filter(order => {
+    const multiple: Array<Order> = data.data.orders.filter(order => {
       const guestInfo = order.rooms_data[0].guest_data.guests[0];
       return (
         name.toLowerCase() ==
@@ -51,12 +52,17 @@ export class ResService {
         order.invoice_id != null
       );
     });
-    const prev: Array<Order> | null = pg == 1 && [] || this.cache.get<Array<Order>>('list')
+    const prev: Array<Order> | undefined = pg == 1 && [] || this.cache.get<Array<Order>>('list')
     if (prev) {
-      multiple = [...prev, ...multiple];
+      if (multiple.length == 0) {
+        return { list: [], new: data.data.found_pages > pg };
+      };
+      const cachedList = [...prev, ...multiple];
+      this.cache.set('list', cachedList, 0);
     };
-    this.cache.set('list', multiple, 0);
-    return { list: multiple, pages: data.data.found_pages};
+    return { list: multiple, 
+      pages: data.data.found_pages, 
+      new: data.data.found_pages > pg };
   };
 
   see (hotel: string): Order {

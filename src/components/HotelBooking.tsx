@@ -214,8 +214,24 @@ const Search = () => {
         };
         setHotelSearchParams(body);
 
+        // London Search:
+        // {
+        //     "checkin": "2024-06-22",
+        //     "checkout": "2024-06-23",
+        //     "residency": "us",
+        //     "language": "en",
+        //     "guests": [
+        //         {
+        //             "adults": 1,
+        //             "children": []
+        //         }
+        //     ],
+        //     "region_id": 2114,
+        //     "currency": "USD"
+        // }
+        // Response time: 9.33 seconds
+        // Potentiall using a dynamic component for the Hotel Display(s)
 
-    
         try {
             console.log(body);
             const response = await maxRPS.post("http://localhost:5001/hotels/search", body, {
@@ -285,7 +301,7 @@ const Search = () => {
                 main_name: data.room_groups.map((group: { name_struct: { main_name: any; }; }) => group.name_struct.main_name),
                 room_images: data.room_groups.map((group: { images: any}) =>  group.images.length > 0 ? group.images[0].replace('{size}', '240x240') : null)
             };
-            console.log("Detials: ", details);
+            console.log("Details: ", details);
 
             setHotelDetails(prevDetails => [...prevDetails, details]);
             console.log("Details for hotel", hotelId, details);

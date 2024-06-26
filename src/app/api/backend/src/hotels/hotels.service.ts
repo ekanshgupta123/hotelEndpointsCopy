@@ -26,7 +26,8 @@ export class HotelsService {
 
     async searchHotels(searchParams: any): Promise<any> {
         const keyId = this.configService.get<string>('KEY_ID');
-        const apiKey = this.configService.get<string>('API_KEY');        const { residency, language, guests, region_id, currency } = searchParams;
+        const apiKey = this.configService.get<string>('API_KEY');        
+        const { residency, language, guests, region_id, currency } = searchParams;
 
         const checkin = this.convertToISO8601Format(searchParams.checkin);
         const checkout = this.convertToISO8601Format(searchParams.checkout);
@@ -61,10 +62,9 @@ export class HotelsService {
             .pipe(
                 map(res => res.data)
             );
-        
         const result = await lastValueFrom(response);
         return result;
-    }
+    };
 
     async fetchHotelDetails(hotelId: string, language: string): Promise<any> {
         const url = `https://api.worldota.net/api/b2b/v3/hotel/info/`;
@@ -75,8 +75,6 @@ export class HotelsService {
             "Content-Type": "application/json",
             "Authorization": `Basic ${Buffer.from(`${keyId}:${apiKey}`).toString('base64')}`
         };
-
-        
 
         const body = {
             id: hotelId,

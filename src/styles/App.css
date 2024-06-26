@@ -52,13 +52,29 @@ a {
   margin-left: 20px;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 8px;
+  margin-bottom: 6px;
   transition: all .05s;
   padding: 1%;
   border-radius: 8px;
 }
 
 .columns:hover {
+  border-style: dashed dashed dashed dashed;
+  border-width: 1px;
+}
+
+.new-col {
+  display: flex;
+  width: 96%;
+  margin-left: 20px;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 6px;
+  transition: all .05s;
+  border-radius: 8px;
+}
+
+.new-col:hover {
   border-style: dashed dashed dashed dashed;
   border-width: 1px;
 }

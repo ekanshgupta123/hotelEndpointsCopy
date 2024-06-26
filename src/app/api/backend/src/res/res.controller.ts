@@ -26,13 +26,13 @@ export class ResController {
     @Req() request: Request, @Query('pg') pgNum: number,
     @Res() response: Response): Promise<Response> {
     try {
-      console.log('here');
       const jwtToken: string = request.cookies['token'];
       const { name } = this.jwtService.decode(jwtToken);
-      const apiCall: PageNum = await this.appService.getInfo(name, pgNum);
+      const apiCall: PageNum | { list: [], new: boolean } = await this.appService.getInfo(name, pgNum);
+      if (!apiCall) return response.status(HttpStatus.OK).json({ data: apiCall })
       return response.status(HttpStatus.OK).json({
         status: 'success',
-        data: { list: apiCall.list, pages: apiCall.pages, user: name },
+        data: { list: apiCall.list, new: apiCall.new, user: name },
       });
     } catch (e) {
       return response.status(HttpStatus.INTERNAL_SERVER_ERROR).json({ error: e })

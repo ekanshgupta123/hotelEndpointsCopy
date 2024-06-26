@@ -89,5 +89,6 @@ export class Details {
 
 export class PageNum {
     list: Array<Order>;
+    new: boolean;
     pages?: number
 }

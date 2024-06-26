@@ -1,4 +1,5 @@
 import { useRouter } from 'next/router';
+import { useInfiniteQuery } from '@tanstack/react-query';
 import React, { useState, useEffect, useRef } from 'react';
 import axios, { AxiosResponse } from 'axios'
 import Navbar from './Navbar'
@@ -79,7 +80,7 @@ interface Components {
     star_rating: string,
     latitude: string, 
     longitutde: string
-  }
+  };
 
 const Reservation: React.FC = () => {
     const router = useRouter();
@@ -94,9 +95,9 @@ const Reservation: React.FC = () => {
     const [scale, setScale] = useState<boolean>(false);
     const hasMounted = useRef(true);
 
-    const increment = () => {
-        setCurrNum(prevNum => prevNum + 1);
-    };
+    // const increment = () => {
+    //     setCurrNum(prevNum => prevNum + 1);
+    // };
 
     const flushCache = async () => {
         await axios.delete('http://localhost:5001/reservation/clear', {
@@ -106,66 +107,9 @@ const Reservation: React.FC = () => {
         console.log('cleared');
     };
 
-    const apiCall = async (currPage: number): Promise<Array<Components>> => {
-        try {
-            if (!reservations) {
-                await flushCache();
-            }
-            const request: AxiosResponse = await 
-            axios.get('http://localhost:5001/reservation/list', {
-                params: { pg: currPage },
-                headers: { 'Content-Type': 'application/json' },
-                withCredentials: true,
-            });
-            const { data } = request.data;
-            const { list, pages, user } = data;
-            console.log(list, currNum, pageNum, user);
-            setUser(user);  
-            if (pages > 1 || pageNum != pages) {
-                setPageNum(pages); 
-            };
-            if (!reservations) {
-                setReservations(list);
-            };
-            return list;
-        } catch (e) {
-            console.error(e)
-            return []
-        };
-    };
-
     useEffect(() => {
-        if (!hasMounted.current) {
-            hasMounted.current = true;
-            const initialLoad = async () => {
-                await apiCall(currNum);
-            };
-            initialLoad();
-            return
-        };
-        const wrapper = async () => {
-            const n = reservations?.length || 0;
-            const arr = await apiCall(currNum);
-            if (reservations && arr.length > n) {
-                console.log('check');
-                setReservations(arr);
-                setCurrNum(currNum);
-                setShow(false);
-                return
-            } else {  
-                if (currNum != pageNum) {
-                    increment();
-                };
-            };
-        };
-        wrapper();
-    }, [currNum])
-
-    console.log(user);
-
-    useEffect(() => {
-        const reservationLookup = async (): Promise<void> => {
-            if (hotel) {
+        if (hotel) {
+            const reservationLookup = async (): Promise<void> => {
                 try {
                     const request: AxiosResponse = await axios.get('http://localhost:5001/reservation/details', {
                         params: { hotel: hotel },
@@ -177,15 +121,96 @@ const Reservation: React.FC = () => {
                     setRetrieving(false);
                 } catch (e) {
                     console.error(e);
-                }
-            }
-        }
-        reservationLookup();
-    }, [hotel])
+                };
+            };
+            reservationLookup();
+        };
+    }, [hotel]);
 
-    if (!reservations) {
-        return <div>Loading...</div>;
+    const { data, 
+        isLoading, 
+        isFetching,
+        fetchNextPage, 
+        hasNextPage } = useInfiniteQuery({
+            queryKey: ['searchResults'],
+            queryFn: async ({ pageParam }) => {
+                const response: AxiosResponse = await axios.get('http://localhost:5001/reservation/list', 
+                { params: { pg: pageParam }, 
+                headers: {'Content-Type': 'application/json' }, 
+                withCredentials: true });
+                const { data } = response.data;
+                setUser(data.user);
+                return { data: data.list, nextPage: data.new ? pageParam + 1 : undefined };
+            },
+            initialPageParam: 1,
+            getNextPageParam: (lastPage) => lastPage.nextPage
+        });
+
+    const wrapper = async () => {
+        if (!isFetching && hasNextPage) await fetchNextPage();
     };
+    wrapper();
+
+    if (isLoading) return <div>Loading...</div>
+
+    // const apiCall = async (currPage: number): Promise<Array<Components>> => {
+    //     try {
+    //         if (!reservations) {
+    //             await flushCache();
+    //         }
+    //         const request: AxiosResponse = await 
+    //         axios.get('http://localhost:5001/reservation/list', {
+    //             params: { pg: currPage },
+    //             headers: { 'Content-Type': 'application/json' },
+    //             withCredentials: true,
+    //         });
+    //         const { data } = request.data;
+    //         const { list, pages, user } = data;
+    //         console.log(list, currNum, pageNum, user);
+    //         setUser(user);  
+    //         if (pages > 1 || pageNum != pages) {
+    //             setPageNum(pages); 
+    //         };
+    //         if (!reservations) {
+    //             setReservations(list);
+    //         };
+    //         return list;
+    //     } catch (e) {
+    //         console.error(e)
+    //         return []
+    //     };
+    // };
+
+    // useEffect(() => {
+    //     if (!hasMounted.current) {
+    //         hasMounted.current = true;
+    //         const initialLoad = async () => {
+    //             await apiCall(currNum);
+    //         };
+    //         initialLoad();
+    //         return
+    //     };
+    //     const wrapper = async () => {
+    //         const n = reservations?.length || 0;
+    //         const arr = await apiCall(currNum);
+    //         if (reservations && arr.length > n) {
+    //             console.log('check');
+    //             setReservations(arr);
+    //             setCurrNum(currNum);
+    //             setShow(false);
+    //             return
+    //         } else {  
+    //             if (currNum != pageNum) {
+    //                 increment();
+    //             };
+    //         };
+    //     };
+    //     wrapper();
+    // }, [currNum])
+
+    // if (!reservations) {
+    //     return <div>Loading...</div>;
+    // };
 
     const handleViewHotel = async () => {
         await flushCache();
@@ -260,11 +285,15 @@ const Reservation: React.FC = () => {
                     <label className='item-label'>Hotel</label>
                     <label>Nights</label>
                 </div>
-                {reservations.map(order => (
-                    <div className='columns' onClick={() => {
-                        setHotel(order.invoice_id);
-                        setScale(true);
-                        setRetrieving(true);
+                {data && data.pages[0].data.map(order => (
+                    <div key={'shown'} className='columns' onClick={() => {
+                        if (order.invoice_id != hotel) {
+                            setHotel(order.invoice_id);
+                            setScale(true);
+                            setRetrieving(true);
+                        } else {
+                            setScale(!scale);
+                        };
                     }}>
                         <label>{user}</label>
                         <label style={{ marginRight: '20px', width: '120px' }}>{new Date(order.checkin_at).toDateString()}</label>
@@ -273,11 +302,28 @@ const Reservation: React.FC = () => {
                         <label style={{ maxWidth: '5px' }}>{order.nights}</label>
                     </div>
                 ))}
-                {currNum != pageNum && <button disabled={currNum == pageNum} style={{ backgroundColor: 'transparent', borderColor: 'transparent', color: 'navy'}} onClick={() => {
-                    setCurrNum(currNum + 1);
-                    setShow(true);
-                }}>Show More...</button>}
-                {show && <label>Loading...</label>}
+                {data && show && data.pages.slice(1,).map((page, pageIndex) => (
+                    <React.Fragment key={pageIndex}>
+                        {page.data.map((order, orderIndex) => ( 
+                            <div key={orderIndex} className='new-col' onClick={() => {
+                                if (order.invoice_id != hotel) {
+                                    setHotel(order.invoice_id);
+                                    setScale(true);
+                                    setRetrieving(true);
+                                } else {
+                                    setScale(!scale);
+                                };
+                            }}>
+                                <label>{user}</label>
+                                <label style={{ marginRight: '20px', width: '120px' }}>{new Date(order.checkin_at).toDateString()}</label>
+                                <label style={{ marginRight: '10px', width: '120px' }}>{new Date(order.checkout_at).toDateString()}</label>
+                                <label className='hotel-specific'>{order.hotel_data.id.replace(/_/g, ' ').replace(/\b\w/g, (char) => char.toUpperCase())}</label>
+                                <label style={{ maxWidth: '5px' }}>{order.nights}{order.name}</label>
+                            </div>
+                        ))}
+                    </React.Fragment>
+                ))}
+                {(show && <button onClick={() => setShow(true)}>Show all</button>) || 'Loading all...'}
             </div>
             {scale && 
             <div className='itin-tag'>
