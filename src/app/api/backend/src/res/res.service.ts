@@ -14,6 +14,7 @@ export class ResService {
     'Authorization': this.authHeader,
   };
   private cache: NodeCache;
+  private pathName: string = '/Users/vijayrakeshchandra/Desktop/previous/api_endpoint/Hotel-Booking-Checkin/src/app/api/backend/src/res/worker.ts';
 
   constructor(private readonly httpService: HttpService,
     private configService: ConfigService
@@ -39,6 +40,7 @@ export class ResService {
       },
       "language":"en"
     };
+
     const { data } = await firstValueFrom(
       this.httpService.post<Components>("https://api.worldota.net/api/b2b/v3/hotel/order/info/", 
       bodyData, 
@@ -52,22 +54,59 @@ export class ResService {
         order.invoice_id != null
       );
     });
-    const prev: Array<Order> | undefined = pg == 1 && [] || this.cache.get<Array<Order>>('list')
+
+    // const test = async (): Promise<any> => {
+    //   try {
+    //     return new Promise((resolve, reject) => {
+    //       const worker = new Worker(this.pathName, {
+    //           workerData: bodyData
+    //       });
+    //       worker.on('message', data => {
+    //         resolve(data);
+    //       });
+    //       worker.on('error', reject);
+    //       worker.on('exit', (code) => {
+    //         if (code !== 0)
+    //           reject(new Error(`Worker stopped with exit code ${code}`));
+    //       });
+    //     });
+    //   } catch (e) {
+    //     console.error(e);
+    //     throw e
+    //   };
+    // };
+    // const nextPage = await test();
+    // console.log(nextPage, 'final');
+    // const workerInfo: Array<Order> = nextPage.list.orders.filter(order => {
+    //   const guestInfo = order.rooms_data[0].guest_data.guests[0];
+    //   return (
+    //     name.toLowerCase() ==
+    //     `${guestInfo.first_name} ${guestInfo.last_name}`.toLowerCase() && 
+    //     order.invoice_id != null
+    //   );
+    // });
+    // Surround these with functions, potentially?
+
+    // console.log(workerInfo, 'info');
+
+    const prev: Array<Order> | undefined = pg == 1 && [] || this.cache.get<Array<Order>>('list');
     if (prev) {
       if (multiple.length == 0) {
         return { list: [], new: data.data.found_pages > pg };
       };
-      const cachedList = [...prev, ...multiple];
+      const cachedList = [...prev, ...multiple]; // ...workerInfo
       this.cache.set('list', cachedList, 0);
+    } 
+    // else {
+    //   this.cache.set('list', [...multiple, ...workerInfo]);
+    // };
+    return { list: multiple, // ...workerInfo
+      new: data.data.found_pages > pg};  // & nextPage.new
     };
-    return { list: multiple, 
-      pages: data.data.found_pages, 
-      new: data.data.found_pages > pg };
-  };
 
-  see (hotel: string): Order {
-    const resList = this.cache.get<Array<Order>>('list')
-    const single: Order = resList.filter((order) => {
+  see (hotel: string): Order | undefined {
+    const resList: Array<Order> | undefined = this.cache.get<Array<Order>>('list')
+    const single: Order | undefined = resList?.filter((order) => {
       return ( 
         order.invoice_id == hotel
       );

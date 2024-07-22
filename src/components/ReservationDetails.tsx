@@ -1,8 +1,7 @@
 import { useRouter } from 'next/router';
-import React, { useEffect, useState, useMemo } from 'react';
+import React, { useEffect, useState } from 'react';
 import axios, { AxiosResponse } from 'axios';
 import { GoogleMap, LoadScript, Marker } from '@react-google-maps/api';
-import type { NextPage } from 'next';
 import pic from './checkins.png'
 import Image from 'next/image';
 import '../styles/App.css';

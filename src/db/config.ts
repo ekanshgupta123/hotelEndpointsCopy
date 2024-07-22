@@ -4,12 +4,10 @@
  */
 import mongoose from "mongoose";
 
-
 export default async function connection() {
     try {
-        await mongoose.connect("mongodb+srv://Cluster30345:Senioryear3009@cluster30345.6tcvlcr.mongodb.net/")
-        console.log('connection true')
+        await mongoose.connect("mongodb://localhost:27017/next-auth")
     } catch (err) {
-        console.log(err)
+        console.error(err, 'within');
     }
-}
+};

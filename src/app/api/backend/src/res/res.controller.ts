@@ -10,7 +10,7 @@ import {
 } from '@nestjs/common';
 import { ResService } from './res.service';
 import { JwtService } from '@nestjs/jwt';
-import { Order, Details, PageNum } from './orders.dto';
+import { Order, PageNum } from './orders.dto';
 import { Request, Response } from 'express';
 
 @Controller('reservation')
@@ -44,12 +44,13 @@ export class ResController {
   async information(@Query('hotel') info: string, 
   @Res() response: Response): Promise<Response> {
     try {
-      const apiCall: Order = this.appService.see(info);
+      const apiCall: Order | undefined = this.appService.see(info);
       return response.status(HttpStatus.OK).json({
         status: 'success',
-        data: apiCall,
+          data: apiCall,
       });
     } catch (e) {
+      console.error(e)
       return response.status(HttpStatus.INTERNAL_SERVER_ERROR).json({ error: e })
     };
   };

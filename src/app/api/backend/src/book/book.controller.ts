@@ -74,6 +74,7 @@ export class BookController {
           confirmation: apiCall.confirmation }
       });
     } catch (e) {
+      console.error(e);
       return response.status(HttpStatus.INTERNAL_SERVER_ERROR).json({ error: e })
     };
   };

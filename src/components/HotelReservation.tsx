@@ -86,18 +86,12 @@ const Reservation: React.FC = () => {
     const router = useRouter();
     const [hotel, setHotel] = useState<string | null>(null);
     const [user, setUser] = useState<string | null>(null);
-    const [pageNum, setPageNum] = useState<number>(1);
-    const [currNum, setCurrNum] = useState<number>(1);
     const [reservations, setReservations] = useState<Components[] | null>(null);
     const [details, setDetails] = useState<Components | null>(null);
     const [show, setShow] = useState<boolean>(false);
     const [retrieving, setRetrieving] = useState<boolean>(false);
     const [scale, setScale] = useState<boolean>(false);
     const hasMounted = useRef(true);
-
-    // const increment = () => {
-    //     setCurrNum(prevNum => prevNum + 1);
-    // };
 
     const flushCache = async () => {
         await axios.delete('http://localhost:5001/reservation/clear', {
@@ -152,65 +146,6 @@ const Reservation: React.FC = () => {
     wrapper();
 
     if (isLoading) return <div>Loading...</div>
-
-    // const apiCall = async (currPage: number): Promise<Array<Components>> => {
-    //     try {
-    //         if (!reservations) {
-    //             await flushCache();
-    //         }
-    //         const request: AxiosResponse = await 
-    //         axios.get('http://localhost:5001/reservation/list', {
-    //             params: { pg: currPage },
-    //             headers: { 'Content-Type': 'application/json' },
-    //             withCredentials: true,
-    //         });
-    //         const { data } = request.data;
-    //         const { list, pages, user } = data;
-    //         console.log(list, currNum, pageNum, user);
-    //         setUser(user);  
-    //         if (pages > 1 || pageNum != pages) {
-    //             setPageNum(pages); 
-    //         };
-    //         if (!reservations) {
-    //             setReservations(list);
-    //         };
-    //         return list;
-    //     } catch (e) {
-    //         console.error(e)
-    //         return []
-    //     };
-    // };
-
-    // useEffect(() => {
-    //     if (!hasMounted.current) {
-    //         hasMounted.current = true;
-    //         const initialLoad = async () => {
-    //             await apiCall(currNum);
-    //         };
-    //         initialLoad();
-    //         return
-    //     };
-    //     const wrapper = async () => {
-    //         const n = reservations?.length || 0;
-    //         const arr = await apiCall(currNum);
-    //         if (reservations && arr.length > n) {
-    //             console.log('check');
-    //             setReservations(arr);
-    //             setCurrNum(currNum);
-    //             setShow(false);
-    //             return
-    //         } else {  
-    //             if (currNum != pageNum) {
-    //                 increment();
-    //             };
-    //         };
-    //     };
-    //     wrapper();
-    // }, [currNum])
-
-    // if (!reservations) {
-    //     return <div>Loading...</div>;
-    // };
 
     const handleViewHotel = async () => {
         await flushCache();
@@ -306,6 +241,7 @@ const Reservation: React.FC = () => {
                     <React.Fragment key={pageIndex}>
                         {page.data.map((order, orderIndex) => ( 
                             <div key={orderIndex} className='new-col' onClick={() => {
+                                console.log(order.invoice_id);
                                 if (order.invoice_id != hotel) {
                                     setHotel(order.invoice_id);
                                     setScale(true);
@@ -323,7 +259,8 @@ const Reservation: React.FC = () => {
                         ))}
                     </React.Fragment>
                 ))}
-                {(show && <button onClick={() => setShow(true)}>Show all</button>) || 'Loading all...'}
+                {(!show && <button onClick={() => setShow(true)}>Show all</button>)}
+                {show && hasNextPage && 'Loading all...'}
             </div>
             {scale && 
             <div className='itin-tag'>

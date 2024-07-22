@@ -1,3 +1,5 @@
+import * as redisStore from 'cache-manager-redis-store';
+import { CacheModule } from '@nestjs/cache-manager';
 import { Module } from '@nestjs/common';
 import { ResController } from './res/res.controller';
 import { ResService } from './res/res.service';
@@ -8,6 +10,9 @@ import { BookController } from './book/book.controller';
 import { BookService } from './book/Book.service';
 import { HotelsController } from './hotels/hotels.controller';
 import { HotelsService } from './hotels/hotels.service';
+import { UtilService } from './util/util.service';
+import { DatabaseModule } from './database/database.module';
+import { MongooseModule } from '@nestjs/mongoose';
 
 @Module({
   imports: [
@@ -15,11 +20,21 @@ import { HotelsService } from './hotels/hotels.service';
     JwtModule.register({ secret: '1234' }),
     ConfigModule.forRoot({
       envFilePath:
-        '/Users/vijayrakeshchandra/Desktop/previous/api_endpoint/Hotel-Booking-Checkin/src/app/api/backend/src/.env',
+        '/Users/vijayrakeshchandra/Desktop/previous/api_endpoint/Hotel-Booking-Checkin/src/app/api/backend/.env',
       isGlobal: true,
-    })
+    }), 
+    CacheModule.register({
+      isGlobal: true, 
+      store: redisStore,
+      ttl: 30,
+      host: 'localhost',
+      port: 6379
+    }), 
+    DatabaseModule,
+    MongooseModule.forRoot('mongodb://localhost:27017/next-auth')
   ],
   controllers: [ResController, BookController, HotelsController],
-  providers: [ResService, BookService, HotelsService],
+  providers: [ResService, BookService, HotelsService, UtilService],
 })
+
 export class AppModule {}
