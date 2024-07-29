@@ -1,7 +1,7 @@
 import { useRouter } from 'next/router';
 import React, { useEffect, useState } from 'react';
 import axios, { AxiosResponse } from 'axios';
-import { GoogleMap, LoadScript, Marker } from '@react-google-maps/api';
+// import { GoogleMap, LoadScript, Marker } from '@react-google-maps/api';
 import pic from './checkins.png'
 import Image from 'next/image';
 import '../styles/App.css';
@@ -249,14 +249,14 @@ const ReservationDetails: React.FC = () => {
                             </div>
                         ))}
                     </div>
-                    <LoadScript googleMapsApiKey={process.env.mapsKey}>
+                    {/* <LoadScript googleMapsApiKey={process.env.mapsKey}>
                         <GoogleMap
                             mapContainerStyle={containerStyle}
                             center={center}
                             zoom={10}>
                             <Marker position={center} />
                         </GoogleMap>
-                    </LoadScript>
+                    </LoadScript> */}
                 </div>
         </div>
     );

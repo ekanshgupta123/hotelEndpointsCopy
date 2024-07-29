@@ -417,3 +417,23 @@ a {
   border: 1px solid #ccc;
   border-radius: 4px;
 }
+
+.button-container {
+  text-align: center;
+  margin-top: 20px;
+}
+
+.btn {
+  background-color: white;
+  border: 2px solid #ff6b6b;
+  color: #ff6b6b;
+  padding: 10px 20px;
+  text-align: center;
+  text-decoration: none;
+  display: inline-block;
+  font-size: 16px;
+  margin: 4px 2px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  border-radius: 5px;
+}

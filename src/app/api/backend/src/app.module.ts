@@ -20,7 +20,7 @@ import { MongooseModule } from '@nestjs/mongoose';
     JwtModule.register({ secret: '1234' }),
     ConfigModule.forRoot({
       envFilePath:
-        '/Users/vijayrakeshchandra/Desktop/previous/api_endpoint/Hotel-Booking-Checkin/src/app/api/backend/.env',
+        '/Users/ekanshgupta/testHotel/hotelEndpoints/src/app/api/backend/.env',
       isGlobal: true,
     }), 
     CacheModule.register({

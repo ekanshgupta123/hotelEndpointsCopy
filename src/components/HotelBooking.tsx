@@ -225,12 +225,19 @@ const Search = () => {
                 cancelToken: cancelTokenRef.current.token
             });
             if (response.data && response.data.data) {
-                const [hotelCache, idCache] = response.data.data;
+                const [hotelCache] = response.data.data;
+                const [idCache] = response.data.data;
+                console.log("hotelCache: ", hotelCache);
+                console.log("idCache: ", idCache);        
                 const hotels = hotelCache.map(element => JSON.parse(element));
+                console.log("Hotels: " , hotels);
                 const ids = idCache.map(element => JSON.parse(element));
+                console.log(ids);
                 setDisplayedHotelCount(prevCount => prevCount+ids.length);
                 setMyHotels(hotels);
                 setMyIds(ids);
+                const staticData = await fetchStaticData(ids.map(hotel => hotel.id));
+                setMyIds(staticData);
                 if (response.data.total) setTotalHotels(response.data.total); 
                 const prices = hotels.reduce((acc: { [key: string]: number }, hotel: any) => {
                     if (hotel && hotel.id && hotel.rates) {
@@ -291,12 +298,24 @@ const Search = () => {
         await searchHotels();
     };
 
+    const fetchStaticData = async (hotelIDs: string[]) => {
+        try {
+            const response = await axios.post('/api/connect', { hotelIDs });
+            return response.data.data;
+        } catch (error) {
+            console.error('Error fetching static data:', error);
+            return [];
+        }
+    };
+
+
     const today = new Date().toISOString().split('T')[0];
     const minCheckOutDate = searchParams.checkInDate ? new Date(new Date(searchParams.checkInDate).getTime() + 86400000).toISOString().split('T')[0] : today;
     // const containerStyle = {
     //     width: '40%%',
     //     height: '80%'
     //   };
+
     
     return (
         <div className="main-wrapper">
@@ -399,8 +418,10 @@ const Search = () => {
                         </LoadScript>
                     )} */}
                 </div>
-                <button disabled={myIds.length == 0} onClick={() => setPage(page+1)}>Next Page</button>
-                <button disabled={page==1} onClick={() => setPage(page-1)}>Previous Page</button>
+                <div className='button-container'>
+                    <button className="btn" disabled={myIds.length == 0} onClick={() => {setPage(page+1); window.scrollTo(0, 0);}}>Next Page</button>
+                    <button className="btn" disabled={page==1} onClick={() => {setPage(page-1); window.scrollTo(0, 0);}}>Previous Page</button>
+                </div>
             </div>
         </div>
     );

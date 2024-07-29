@@ -64,6 +64,10 @@ export class BookController {
         last, 
         email
       ); 
+
+      // console.log("APICALL: ", apiCall.confirmation);
+      // console.log("APICALL: ", apiCall.creditNeeded);
+      // console.log("APICALL: ", apiCall.pID);
       return response.status(HttpStatus.OK).json({
         status: 'Order has been placed.',
         data: { partnerID: apiCall.pID, 

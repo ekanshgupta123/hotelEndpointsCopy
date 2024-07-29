@@ -133,6 +133,7 @@ const Reservation: React.FC = () => {
                 headers: {'Content-Type': 'application/json' }, 
                 withCredentials: true });
                 const { data } = response.data;
+                console.log("Data of reservation: ", data);
                 setUser(data.user);
                 return { data: data.list, nextPage: data.new ? pageParam + 1 : undefined };
             },

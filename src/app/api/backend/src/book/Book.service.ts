@@ -28,11 +28,14 @@ export class BookService {
             "language": "en",
             "user_ip": ipAddress
         };
+        // console.log("Body data: ", bodyData);
         const { data } = await firstValueFrom(this.httpService.post<Rates>(
             'https://api.worldota.net/api/b2b/v3/hotel/order/booking/form/', 
             bodyData, 
             { headers: this.headers }
         ));
+
+        // console.log("Data: " , data);
         return {ratesList: data.data, payUUID: UUID };
     };
 
@@ -64,7 +67,7 @@ export class BookService {
                 }
             ],
             "user": {
-                "email": email || "operations@chekins.com", // test email
+                "email": "operations@chekins.com", // test email
                 "phone": "6503088202" // test phone
             }
         };
@@ -73,6 +76,7 @@ export class BookService {
             bodyData, 
             { headers: this.headers }
         ));
+        console.log("Data: ", data);
         return data.status == 'ok' && { creditNeeded: paymentInfo.is_need_credit_card_data, 
             cvcNeeded: paymentInfo.is_need_cvc, 
             pID: partnerInfo,

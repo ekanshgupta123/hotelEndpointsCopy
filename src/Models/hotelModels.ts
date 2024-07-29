@@ -150,7 +150,7 @@ const hotelInfo = new Schema({
     room_groups: [{ type: individualRoom }],
     star_rating: Number
 }, {
-    collection: 'static-data'
+    collection: 'static-hotel-data'
 });
-const Hotel = mongoose.model.Hotel || mongoose.model('Hotel', hotelInfo)
+const Hotel = mongoose.models.Hotel || mongoose.model('Hotel', hotelInfo)
 export default Hotel;
