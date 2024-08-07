@@ -5,6 +5,7 @@
   font-family: 'Trebuchet MS', 'Lucida Sans Unicode', 'Lucida Grande', 'Lucida Sans', Arial, sans-serif;
 }
 
+
 a {
   text-decoration: none;
 }
@@ -120,9 +121,9 @@ a {
 
 .review-hotel {
   display: flex;
-  width: 100%;
+  flex-direction: column;
   justify-content: space-between;
-  align-items: center;
+  align-items: left;
   margin-bottom: 0.5%;
   padding: 1%;
   border-radius: 8px;
@@ -335,9 +336,8 @@ a {
   }
   
   .property-item {
-    text-align: center; /* This centers any inline or inline-block children */
-    /* Other styles remain unchanged */
-    width: 50%; /* Sets a fixed width of 300 pixels */
+    text-align: center;
+    width: 50%;
     margin: 10px auto;
     border: 1px solid #ccc;
     padding: 10px;
@@ -372,10 +372,10 @@ a {
   border: 1px solid #ccc;
   border-radius: 4px;
   box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-  min-width: 300px;; /* Adjust based on your input width */
-  max-height: 200px; /* Optional: limit the height and make it scrollable */
+  min-width: 300px;
+  max-height: 200px;
   overflow-y: auto;
-  z-index: 1000; /* Ensure it appears above other elements */
+  z-index: 1000;
 }
 
 .suggestions-list {
@@ -418,11 +418,6 @@ a {
   border-radius: 4px;
 }
 
-.button-container {
-  text-align: center;
-  margin-top: 20px;
-}
-
 .btn {
   background-color: white;
   border: 2px solid #ff6b6b;
@@ -437,3 +432,132 @@ a {
   transition: all 0.3s ease;
   border-radius: 5px;
 }
+
+.btn:disabled {
+  background-color: lightgray;
+}
+
+body, html {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+}
+
+.main-wrapper {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+}
+
+.search-container {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: auto;
+}
+
+.content-wrapper {
+  display: flex;
+  flex: 1;
+  position: relative;
+}
+
+.form-container {
+  flex: 3;
+  display: flex;
+  flex-direction: column;
+}
+
+.map-container {
+  position: fixed;
+  margin-top: 30px;
+  right: 0;
+  width: 35%; 
+  height: 100%;
+  z-index: 1000; 
+  background-color: white; 
+  margin-right: 1%;
+}
+
+.hotel-list-container {
+  flex: 1;
+  overflow-y: auto;
+  margin-right: 37.5%;
+}
+
+.filter-container {
+  background-color: #f8f8f8;
+  border: 1px solid #ddd;
+  padding: 20px;
+  border-radius: 5px;
+  margin-bottom: 20px;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+  margin-right: 1.5%;
+  width: 15%;
+}
+
+
+.filter-option {
+  margin-bottom: 15px;
+}
+
+.star-rating-container {
+  display: flex;
+  flex-direction: column;
+}
+
+.star-rating-container .rating-filter {
+  display: flex;
+  align-items: center;
+  margin-bottom: 5px;
+}
+
+.star-rating-container .rating-filter span {
+  margin-left: 5px;
+}
+
+.price-range-container {
+  padding-top: 5%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+
+.price-range-inputs {
+  display: flex;
+  justify-content: space-between;
+  width: 100%;
+  margin-bottom: 10px;
+}
+
+.price-range-inputs .MuiTextField-root {
+  width: 48%;
+}
+
+.MuiSlider-root {
+  width: 100%;
+}
+
+.meal-options-container {
+  display: flex;
+  flex-direction: column;
+}
+
+.meal-option {
+  display: flex;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.meal-label {
+  display: flex;
+  align-items: center;
+}
+
+.info-icon {
+  margin-left: 5px;
+  color: rgba(0, 0, 0, 0.54); /* Adjust the color as needed */
+}
+
+

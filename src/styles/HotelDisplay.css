@@ -1,23 +1,39 @@
-.hotel-header {
-    text-align: center;
-    margin-bottom: 20px;
-}
-
-.hotel-images img {
-    width: 100%;
-    max-width: 240px;
-    height: auto;
-    margin-right: 10px;
-}
-
 .hotel-details {
     display: flex;
     justify-content: space-between;
+    margin-left: 2%;
+    background-color: white;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    margin-top: 2%;
+    padding: 1%;
+    width: 1170px;
+}
+
+.flex-row {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.center-div {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.flex-column {
+    display: flex;
+    flex-direction: column;
 }
 
 .hotel-info, .hotel-amenities {
     flex: 1;
     margin-right: 20px;
+}
+
+.hotel-amenities {
+    display: flex;
+    flex-direction: column;
 }
 
 .amenities li {
@@ -26,13 +42,14 @@
 }
 
 .subtitle {
-    color: #666;
-    font-size: 16px;
+    color: rgba(0, 0, 128, 0.763);
+    font-size: 13px;
 }
 
 .rating {
     font-weight: bold;
-    color: #4CAF50;
+    color: #FFD700;
+    font-size: 10px;
 }
 
 .hotel-info h2, .hotel-amenities h2 {
@@ -44,7 +61,6 @@
     display: flex;
     flex-direction: column;
     position: relative;
-    min-height: 100vh;
     overflow: auto;  
 }
 
@@ -60,13 +76,127 @@
     background-color: #fff; /* Optional: for better visibility */
     box-shadow: 0 2px 5px rgba(0,0,0,0.1);
 }
-.hotel-header, .hotel-images, .hotel-details, .room-container {
-    margin-bottom: 20px;
+
+.hotel-front {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.price-label {
+    font-size: 24px;
+}
+
+.hotel-front, .subtitle, .price-label, .hotel-amenities, .hotel-info {
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+}
+
+.price-column {
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    gap: 5px;
+    text-align: right;
+}
+
+.rooms-button {
+    height: 40%;
+    background-color: red;
+    color: white;
+    border-color: transparent;
+    border-radius: 6px;
+}
+
+.rooms-button:hover {
+    cursor: pointer;
+}
+
+.reserve-button {
+    color: white;
+    background-color: gray;
+    padding: 2%;
+    border-color: transparent;
+    border-radius: 6px;
+    margin-top: 10%;
+    width: 75%;
+}
+
+/* ---------- */
+
+.hotel-header {
+    text-align: left;
+    display: flex;
+    flex-direction: column;
+    margin-bottom: 10px;
+    gap: 5px;
+    }
+    
+.hotel-images img {
+width: 100%;
+max-width: 240px;
+height: auto;
+margin-right: 10px;
+}
+
+.hotel-details {
+display: flex;
+justify-content: space-between;
+}
+
+.hotel-info, .hotel-amenities {
+flex: 1;
+margin-right: 20px;
+}
+
+.amenities li {
+list-style-type: none;
+padding: 5px 0;
+}
+
+.subtitle {
+color: #666;
+font-size: 16px;
+}
+
+.rating {
+font-weight: bold;
+color: #4CAF50;
+}
+
+.hotel-info h2, .hotel-amenities h2 {
+color: #333;
+border-bottom: 2px solid #ddd;
+padding-bottom: 10px;
+}
+
+.hotel-container {
+display: flex;
+flex-direction: column;
+position: relative;
+overflow: auto;  
+}
+
+.room-container {
+display: grid;
+grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); /* Creates as many columns as needed with a min width of 250px */
+gap: 20px; /* Space between cards */
+padding: 20px; /* Padding around the grid */
+}
+
+.room-card {
+border: 1px solid #ccc;
+padding: 20px;
+background-color: #fff; /* Optional: for better visibility */
+box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+}
+
+.hotel-images, .hotel-details, .room-container {
+margin-bottom: 20px;
 }
 
 .hotel-item {
-    transition: transform 0.3s ease, box-shadow 0.3s ease; /* Smooth transition for the scaling effect and box-shadow */
-    cursor: pointer; /* Change cursor to pointer to indicate clickability */
+transition: transform 0.3s ease, box-shadow 0.3s ease; /* Smooth transition for the scaling effect and box-shadow */
+cursor: pointer; /* Change cursor to pointer to indicate clickability */
 }
 
 .hotel-item:hover {
@@ -83,91 +213,117 @@
     cursor: pointer;
     transition: transform 0.3s ease, box-shadow 0.3s ease;
     align-items: flex-start;
-    max-width: 1000px;
     width: 100%; 
     margin-left: 0; 
+    border-radius: 15px;
 }
 
 
 .hotel-card:hover {
-    box-shadow: 0 10px 8px rgba(0, 0, 0, 0.2);
+box-shadow: 0 10px 8px rgba(0, 0, 0, 0.2);
 }
 
 .additional-info {
-    display: flex;
-    justify-content: space-between;
-    font-size: 14px;
-    color: #777;
-  }
+display: flex;
+justify-content: space-between;
+font-size: 14px;
+color: #777;
+}
 
 
 .hotel-image {
-    width: 150px;
-    height: auto;
-    margin-right: 20px;
+width: 240px;
+height: auto;
+margin-right: 20px;
+align-items: center;
 }
 
 .hotel-info {
-    padding: 20px;
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between;
-    flex-grow: 1;
-  }
-  
-
-.hotel-header {
-    margin-bottom: 10px;
-}
-
-.hotel-name {
-    font-size: 18px;
-    margin: 0;
+display: flex;
+flex-direction: column;
+justify-content: space-between;
+flex-grow: 1;
 }
 
 .hotel-address {
-    font-size: 14px;
-    color: #666;
-    margin: 0;
+font-size: 14px;
+color: #666;
+margin: 0;
 }
 
 .hotel-name {
-    font-size: 18px;
-    font-weight: bold;
-    margin: 0;
+font-size: 18px;
+font-weight: bold;
+margin: 0;
 }
 
 .show-all-rooms-button {
-    background-color: #007bff;
-    color: white;
-    border: none;
-    padding: 8px 16px;
-    cursor: pointer;
-    margin-top: 10px;
-    text-align: center;
-    align-self: flex-end; 
+background-color: #007bff;
+color: white;
+border: none;
+padding: 8px 16px;
+border-radius: 6px;
+cursor: pointer;
+margin-top: 10px;
+text-align: center;
+align-self: flex-end; 
 }
 
 .show-all-rooms-button:hover {
-    background-color: #0056b3;
+background-color: #0056b3;
 }
 
 .price-info {
-    margin-bottom: 10px;
+margin-bottom: 10px;
 }
-  
+
 .hotel-price {
-    font-size: 16px;
-    font-weight: bold;
-    color: #333;
+font-size: 16px;
+font-weight: bold;
+color: #333;
 }
 
 .room-info {
-    margin-bottom: 10px;
+margin-bottom: 10px;
+}
+
+.room-type {
+font-size: 16px;
+color: #333;
+}
+
+.refund-content {
+    width: 15%;
+    display: flex;
+    gap: 10px;
+    padding: 1%;
+}
+
+/*  */
+
+.infoIconContainer {
+    position: relative;
+    display: inline-block;
+    cursor: pointer;
   }
   
-  .room-type {
-    font-size: 16px;
+  .icon {
+    font-size: 18px;
+    color: #0070f3;
+  }
+  
+  .infoText {
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    background-color: #fff;
     color: #333;
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    white-space: nowrap;
+    z-index: 1;
   }
   

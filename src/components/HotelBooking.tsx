@@ -2,51 +2,21 @@ import React, { useState, useEffect, useRef } from 'react';
 import '../styles/App.css';
 import Navbar from './Navbar';
 import HotelDisplay from './HotelDisplay';
-import { Alert } from '@mui/material';
+import { Alert, TextField } from '@mui/material';
+import Spinner from './Spinner';
 import axios, { CancelTokenSource } from 'axios';
-import rateLimit from 'axios-rate-limit';
-import pLimit from 'p-limit';
-// import { GoogleMap, LoadScript, Marker } from '@react-google-maps/api';
-
-const limit = pLimit(5);
-const http = axios.create();
-const maxRequests = 1;
-const perMilliseconds = 1000;
-const maxRPS = rateLimit(http, { maxRequests, perMilliseconds });
-
-interface QueueItem {
-    hotelId: string;
-    index: number;
-    price: number;
-    resolve: (value?: void | PromiseLike<void>) => void;
-    reject: (reason?: any) => void;
-}
+import GoogleMapsComponent from './GoogleMapsComponent';
+import { Slider, Checkbox, FormControlLabel } from '@mui/material';
+import { Tooltip } from '@mui/material';
+import InfoIcon from '@mui/icons-material/Info';
 
 interface Region {
     name: string;
-    id: number | null; // This should match the state's expected type
+    id: number | null; 
 }
 
 interface Child {
     age: number;
-}
-
-interface Hotel {
-    id: string;
-}
-
-interface HotelDetails {
-    hotels: any;
-    id: string;
-    name: string;
-    address: string;
-    starRating: number;
-    amenities: string[];
-    price: number;
-    images: string[];
-    description: string;
-    main_name: string;
-    room_images: string[];
 }
 
 interface SearchParams {
@@ -101,10 +71,24 @@ const Search = () => {
     const [error, setError] = useState<string | null>(null);
     const [children, setChildren] = useState<Child[]>([]);
     const [totalHotels, setTotalHotels] = useState(0);
-    const [displayedHotelCount, setDisplayedHotelCount] = useState(0); // New state for tracking displayed hotels
+    const [displayedHotelCount, setDisplayedHotelCount] = useState(0);
     const [page, setPage] = useState<number>(1);
-    const [myHotels, setMyHotels] = useState<any>([]);
-    const [myIds, setMyIds] = useState<any>([]);
+    const [prevPage, setPrevPage] = useState<number>(1);
+    const [myHotels, setMyHotels] = useState<any[]>([]);
+    const [myIds, setMyIds] = useState<any[]>([]);
+    const [priceRange, setPriceRange] = useState<number[]>([0, 5000]);
+    const [selectedRatings, setSelectedRatings] = useState<number[]>([]);
+    const [selectedMeals, setSelectedMeals] = useState<string[]>([]);
+
+
+    const mealOptions = [
+        { label: 'No meals included', value: 'nomeal' },
+        { label: 'Breakfast included', value: 'breakfast' },
+        { label: 'Breakfast + dinner or lunch included', value: 'breakfast_dinner_lunch' },
+        { label: 'Breakfast, lunch and dinner included', value: 'all_meals' },
+        { label: 'All-inclusive', value: 'all_inclusive' },
+    ];
+    
 
     const incrementAdults = (e: { preventDefault: () => void; }) => {
         e.preventDefault();
@@ -132,12 +116,49 @@ const Search = () => {
         setChildren(prevChildren => prevChildren.slice(0, -1));
     };
 
+    const handleMinPriceChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+        const value = Math.max(0, Math.min(parseInt(event.target.value), priceRange[1]));
+        setPriceRange([value, priceRange[1]]);
+    };
+
+    const handleMaxPriceChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+        const value = Math.max(priceRange[0], Math.min(parseInt(event.target.value), 5000));
+        setPriceRange([priceRange[0], value]);
+    };
+
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const { name, value } = e.target;
         setSearchParams(prevParams => ({
             ...prevParams,
             [name]: name === 'adults' ? parseInt(value, 10) || 0 : value
         }));
+    };
+
+    const handlePriceChange = (event: Event, newValue: number | number[]) => {
+        setPriceRange(newValue as number[]);
+    };
+
+    const handleMealChange = (meal: string) => {
+        setSelectedMeals(prevSelectedMeals => {
+            if (prevSelectedMeals.includes(meal)) {
+                return prevSelectedMeals.filter(m => m !== meal);
+            } else {
+                return [...prevSelectedMeals, meal];
+            }
+        });
+    };
+    
+    const isSelectedMeal = (meal: string) => selectedMeals.includes(meal);
+    
+
+    const handleRatingChange = (rating: number) => {
+        setSelectedRatings((prevRatings) => {
+            if (prevRatings.includes(rating)) {
+                return prevRatings.filter((r) => r !== rating);
+            } else {
+                return [...prevRatings, rating];
+            }
+        });
     };
 
     const getRegionId = async (query: string) => {
@@ -186,15 +207,19 @@ const Search = () => {
     }, [searchParams.destination]);
 
     useEffect(() => {
-        if (myIds.length != 0) searchHotels();
+        if (myIds.length !== 0) searchHotels();
     }, [page]);
 
     const [rates, setRates] = useState<{ [key: string]: number }>({});
 
-    const searchHotels = async () => {
+    const searchHotels = async (flag?: boolean) => {
         console.log("Loading...");
         setIsLoading(true);
         setError(null);
+        if (flag) {
+            setPage(1);
+            setPrevPage(1);
+        }
 
         if (cancelTokenRef.current) {
             cancelTokenRef.current.cancel("Canceled due to new request");
@@ -205,6 +230,8 @@ const Search = () => {
             adults: Number(searchParams.adults),
             children: children?.map(child => ({ age: child.age })) || []
         }];
+
+        console.log(searchParams.checkInDate);
 
         const body = {
             checkin: searchParams.checkInDate,
@@ -218,6 +245,8 @@ const Search = () => {
             pageNumber: page
         };
 
+        console.log('curr: ', page, 'prev:', prevPage);
+
         setHotelSearchParams(body);
 
         try {
@@ -227,18 +256,22 @@ const Search = () => {
             if (response.data && response.data.data) {
                 const [hotelCache] = response.data.data;
                 const [idCache] = response.data.data;
-                console.log("hotelCache: ", hotelCache);
-                console.log("idCache: ", idCache);        
-                const hotels = hotelCache.map(element => JSON.parse(element));
-                console.log("Hotels: " , hotels);
-                const ids = idCache.map(element => JSON.parse(element));
-                console.log(ids);
-                setDisplayedHotelCount(prevCount => prevCount+ids.length);
+                const hotels = hotelCache.map((element: string) => JSON.parse(element));
+                const ids = idCache.map((element: string) => JSON.parse(element));
+                if (page >= prevPage) {
+                    setDisplayedHotelCount(prevCount => prevCount + ids.length);
+                } else if (page < prevPage) {
+                    setDisplayedHotelCount(prevCount =>
+                        prevCount % 25 === 0
+                            ? prevCount - 25
+                            : prevCount - (prevCount % 25)
+                    );
+                }
                 setMyHotels(hotels);
-                setMyIds(ids);
-                const staticData = await fetchStaticData(ids.map(hotel => hotel.id));
+                const staticData = await fetchStaticData(ids.map((hotel: { id: any; }) => hotel.id));
                 setMyIds(staticData);
-                if (response.data.total) setTotalHotels(response.data.total); 
+                if (response.data.total) setTotalHotels(response.data.total);
+                console.log(response.data.total);
                 const prices = hotels.reduce((acc: { [key: string]: number }, hotel: any) => {
                     if (hotel && hotel.id && hotel.rates) {
                         for (let i = 0; i < hotel.rates.length; i++) {
@@ -247,20 +280,34 @@ const Search = () => {
                                 break;
                             }
                         }
-                    };
+                    }
                     return acc;
                 }, {});
                 setRates(prices);
             } else {
                 console.log("No hotels data found");
                 setMyHotels([]);
-                setTotalHotels(0); 
-            };
+                setTotalHotels(0);
+            }
         } catch (error) {
             handleErrors(error);
         } finally {
             setIsLoading(false);
             console.log("Loading complete.");
+            window.scrollTo({
+                top: 0,
+                behavior: 'smooth'
+            });
+        }
+    };
+
+    const fetchStaticData = async (hotelIDs: string[]) => {
+        try {
+            const response = await axios.post('/api/connect', { hotelIDs });
+            return response.data.data;
+        } catch (error) {
+            console.error('Error fetching static data:', error);
+            return [];
         }
     };
 
@@ -282,8 +329,8 @@ const Search = () => {
             destination: region.name
         }));
         setRegionId(region.id);
-        console.log(region.id);
-        setSuggestions([]);  
+        console.log(region);
+        setSuggestions([]);
     };
 
     const onSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -291,32 +338,39 @@ const Search = () => {
         if (!searchParams.destination || !searchParams.checkInDate || !searchParams.checkOutDate) {
             setError("Please fill in all required fields.");
             return;
-        };
+        }
         setMyHotels([]);
         setMyIds([]);
         setSearchParams({ ...searchParams });
-        await searchHotels();
+        setDisplayedHotelCount(0);
+        setTotalHotels(0);
+        await searchHotels(true);
     };
 
-    const fetchStaticData = async (hotelIDs: string[]) => {
-        try {
-            const response = await axios.post('/api/connect', { hotelIDs });
-            return response.data.data;
-        } catch (error) {
-            console.error('Error fetching static data:', error);
-            return [];
-        }
-    };
+    console.log("MyIds: ", myIds);
 
+    const filterHotels = (hotels: any[]) => {
+        const ratingsToCheck = selectedRatings.length === 0 ? [0, 1, 2, 3, 4, 5] : selectedRatings;
+        const mealsToCheck = selectedMeals.length === 0 ? ['nomeal', 'breakfast', 'breakfast_dinner_lunch', 'all_inclusive'] : selectedMeals;
+    
+        return hotels.filter((hotel) => {
+            const hotelStaticData = myIds.find((staticData: { id: any; }) => staticData.id === hotel.id);
+            console.log("hotel: ,", hotel);
+            const hotelPrice = rates[hotel.id];
+            const matchesPrice = hotelPrice >= priceRange[0] && hotelPrice <= priceRange[1];
+            const matchesRating = hotelStaticData && ratingsToCheck.includes(hotelStaticData.star_rating || 0);
+            const matchesMeal = hotel.rates && hotel.rates[0] && mealsToCheck.includes(hotel.rates[0].meal);
+            console.log("Hotel ID:", hotel.id, "Static Data ID:", hotelStaticData?.id);
+            return matchesPrice && matchesRating && matchesMeal;
+        });
+    };
+    
+
+    const filteredHotels = filterHotels(myHotels);
 
     const today = new Date().toISOString().split('T')[0];
     const minCheckOutDate = searchParams.checkInDate ? new Date(new Date(searchParams.checkInDate).getTime() + 86400000).toISOString().split('T')[0] : today;
-    // const containerStyle = {
-    //     width: '40%%',
-    //     height: '80%'
-    //   };
 
-    
     return (
         <div className="main-wrapper">
             <header><Navbar /></header>
@@ -377,50 +431,140 @@ const Search = () => {
                         <button type="submit" className="search-button" disabled={isLoading}> Search </button>
                     </div>
                 </form>
-                {isLoading && <p>Loading...</p>}
+                {isLoading}
                 {error && (
                     <Alert severity="error">
                         Error: {error}
                     </Alert>
                 )}
-                <div className='hotel-list-container'>
-                    <h2>Displaying {displayedHotelCount} out of {totalHotels} hotels</h2>
-                    {myHotels && myHotels.map((hotel, index) => (
-                        <div key={index}>
-                            <HotelDisplay
-                                key={index}
-                                hotel={hotel}
-                                searchParams={hotelSearchParams}
-                                statics={myIds[index]}
-                                price={rates[hotel.id]} 
-                            />
-                        </div>
-                    ))}
-                    {/* {myIds.length > 0 && (
-                        <LoadScript googleMapsApiKey={process.env.mapsKey || ''}>
-                        <GoogleMap
-                            mapContainerStyle={containerStyle}
-                            center={{
-                                lat: parseFloat(myIds[0].latitude),
-                                lng: parseFloat(myIds[0].longitude)
-                            }}
-                            zoom={10}>
-                            {myIds.slice(1,).map((data, index) => (
-                            <Marker 
-                                key={index}
-                                position={{
-                                lat: parseFloat(data.latitude),
-                                lng: parseFloat(data.longitude)
+                <div className="content-wrapper">
+                    <div className="filter-container">
+                        <h3>Filter Options</h3>
+                        <div className="filter-option">
+                            <label>Price Range</label>
+                            <div className="price-range-container">
+                        <div className="price-range-inputs">
+                            <TextField
+                                label="Min Price"
+                                variant="outlined"
+                                type="number"
+                                value={priceRange[0]}
+                                onChange={handleMinPriceChange}
+                                InputLabelProps={{
+                                    shrink: true,
+                                }}
+                                inputProps={{
+                                    min: 0,
+                                    max: 5000,
+                                    step: 1,
                                 }}
                             />
-                            ))}
-                        </GoogleMap>
-                        </LoadScript>
-                    )} */}
-                </div>
-                <div className='button-container'>
-                    <button className="btn" disabled={myIds.length == 0} onClick={() => {setPage(page+1); window.scrollTo(0, 0);}}>Next Page</button>
-                    <button className="btn" disabled={page==1} onClick={() => {setPage(page-1); window.scrollTo(0, 0);}}>Previous Page</button>
+                            <TextField
+                                label="Max Price"
+                                variant="outlined"
+                                type="number"
+                                value={priceRange[1]}
+                                onChange={handleMaxPriceChange}
+                                InputLabelProps={{
+                                    shrink: true,
+                                }}
+                                inputProps={{
+                                    min: 0,
+                                    max: 5000,
+                                    step: 1,
+                                }}
+                            />
+                        </div>
+                        <Slider
+                            value={priceRange}
+                            onChange={handlePriceChange}
+                            valueLabelDisplay="auto"
+                            min={0}
+                            max={5000}  // Update the max value to 5000
+                            marks
+                            step={1}
+                        />
+                    </div>
+                        </div>
+                        <div className="filter-option">
+                            <label>Star Rating</label>
+                            <div className="star-rating-container">
+                                {[5, 4, 3, 2, 1].map((star) => (
+                                    <FormControlLabel
+                                        key={star}
+                                        control={<Checkbox checked={selectedRatings.includes(star)} onChange={() => handleRatingChange(star)} />}
+                                        label={
+                                            <span className="stars">
+                                                {'★'.repeat(star)}{'☆'.repeat(5 - star)}
+                                            </span>
+                                        }
+                                    />
+                                ))}
+                                <FormControlLabel
+                                    control={<Checkbox checked={selectedRatings.includes(0)} onChange={() => handleRatingChange(0)} />}
+                                    label={<span className="stars">☆ or without star rating</span>}
+                                />
+                            </div>
+                        </div>
+                        <div className='filter-option'>
+                            <label>Meals</label>
+                            <div className="meal-options-container">
+                                {mealOptions.map((meal) => (
+                                    <div key={meal.value} className="meal-option">
+                                        <FormControlLabel
+                                            control={
+                                                <Checkbox
+                                                    checked={isSelectedMeal(meal.value)}
+                                                    onChange={() => handleMealChange(meal.value)}
+                                                />
+                                            }
+                                            label={
+                                                <div className="meal-label">
+                                                    {meal.label}
+                                                    <Tooltip title={`Info about ${meal.label}`} placement="top">
+                                                        <InfoIcon fontSize="small" className="info-icon" />
+                                                    </Tooltip>
+                                                </div>
+                                            }
+                                        />
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+                    <div className="hotel-list-container">
+                        <h2>Displaying {filteredHotels.length} out of {totalHotels} hotels</h2>
+                        {filteredHotels.map((hotel) => (
+                            <div key={hotel.id}>
+                                <HotelDisplay
+                                    hotel={hotel}
+                                    searchParams={hotelSearchParams}
+                                    statics={myIds.find((staticData: { id: any; }) => staticData.id === hotel.id)}
+                                    price={rates[hotel.id]}
+                                />
+                            </div>
+                        ))}
+                        <button className="btn"
+                            disabled={displayedHotelCount === totalHotels} onClick={() => {
+                                setPrevPage(page);
+                                setPage(page + 1);
+                            }}>Next Page</button>
+                        <button className="btn"
+                            disabled={page === 1} onClick={() => {
+                                setPrevPage(page);
+                                setPage(page - 1);
+                            }}>Previous Page</button>
+                    </div>
+                    <div className="map-container">
+                        <GoogleMapsComponent addresses={filteredHotels.map((hotel) => ({
+                            address: myIds.find((staticData: { id: any; }) => staticData.id === hotel.id)?.address,
+                            name: myIds.find((staticData: { id: any; }) => staticData.id === hotel.id)?.name,
+                            price: rates[hotel.id],
+                            rating: myIds.find((staticData: { id: any; }) => staticData.id === hotel.id)?.star_rating,
+                            amenities: myIds.find((staticData: { id: any; }) => staticData.id === hotel.id)?.amenities,
+                            statics: myIds.find((staticData: { id: any; }) => staticData.id === hotel.id)
+                        }))} loading={isLoading} searchParams={hotelSearchParams} />
+                    </div>
                 </div>
             </div>
         </div>

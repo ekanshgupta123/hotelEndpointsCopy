@@ -8,7 +8,6 @@ export class HotelsController {
 
     @Post('search')
     async searchHotels(@Body() searchParams: any): Promise<any> {
-        console.log('Incoming search params:', searchParams);
         try {
             const result = await this.hotelsService.searchHotels(searchParams);
             return result;
@@ -17,13 +16,6 @@ export class HotelsController {
             throw new HttpException(e.message, HttpStatus.INTERNAL_SERVER_ERROR);
         };
     };
-
-    // @UseInterceptors(CacheInterceptor)
-    // @Post('test1')
-    // async testEndpointOne() {
-    //     const result = await this.hotelsService.testCacheOne();
-    //     return result;
-    // };
 
     @Post('rate')
     async rateLookup (@Body() roomGroup: { id: string, room: any }) {
@@ -38,7 +30,6 @@ export class HotelsController {
         
     @Post('rooms') 
     async getRooms(@Body() searchParams: any): Promise<any> {
-        console.log('Incoming search params:', searchParams);
         try {
             const result = await this.hotelsService.fetchHotelRooms(searchParams);
             return result;
