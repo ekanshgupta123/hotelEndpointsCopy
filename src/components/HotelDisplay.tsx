@@ -1,6 +1,7 @@
 import React from 'react';
 import pic from './checkins.png';
 import '../styles/HotelDisplay.css';
+import search from '@/pages/search';
 
 interface HotelDetails {
     id: string;
@@ -40,7 +41,7 @@ interface HotelDisplayProps {
     hotel: HotelDetails;
     searchParams: HotelSearchParams;
     statics: any;
-    price: number
+    price?: number
 }
 
 interface HotelSearchParams {
@@ -58,13 +59,19 @@ interface HotelSearchParams {
     currency: string;
 }
 
-const HotelDisplay: React.FC<HotelDisplayProps> = ({ hotel, searchParams, statics, price }) => {
+
+const HotelDisplay: React.FC<HotelDisplayProps> = ({ hotel, searchParams, statics }) => {
     const handleCardClick = (hotelId: string, hotelData: HotelDetails, searchParams: HotelSearchParams) => {
         localStorage.setItem('currentHotelData', JSON.stringify(hotelData));
         localStorage.setItem('searchParams', JSON.stringify(searchParams));
         localStorage.setItem('priceParams', JSON.stringify(price));
         window.open(`/hotel/${hotelId}`, '_blank');
     };
+
+    // console.log("Hotel from display" , hotel.rates[0].daily_prices[0]);
+    // console.log("Hotel display statics: ", statics);
+
+    // console.log("searchparams ", searchParams);
 
     const image = statics?.images?.[0];
     const imageResult = image
@@ -75,8 +82,16 @@ const HotelDisplay: React.FC<HotelDisplayProps> = ({ hotel, searchParams, static
     let checkinDate = new Date(searchParams.checkin);
     
     let dateDifferenceMilliSeconds = checkoutDate.getTime() - checkinDate.getTime();
+    // console.log("data difference, ", dateDifferenceMilliSeconds);
     let dateDifferenceDays = Math.floor(dateDifferenceMilliSeconds / (1000 * 60 * 60 * 24));
+    // console.log("data difference days, ", dateDifferenceDays);
 
+
+    let price = hotel.rates[0].daily_prices[0];
+
+    const totalPrice = Number(price) * dateDifferenceDays;
+
+    // console.log("totla price ", totalPrice);
     const meal = hotel.rates[0]?.meal === 'nomeal' ? 'No Meal' : hotel.rates[0]?.meal;
     const cancellation = hotel.rates[0]?.payment_options.payment_types[0].cancellation_penalties.free_cancellation_before == null ? 'No Free Cancellation' : 'Free Cancellation';
 

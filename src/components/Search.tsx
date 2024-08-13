@@ -1,100 +1,186 @@
-import React, { useState } from 'react';
-import '../styles/App.css';
-import { useRouter } from "next/router";
+import React, { useState, useEffect } from 'react';
+import axios from 'axios';
+import { useRouter } from 'next/router';
+import '../styles/Search.css';
+
+interface SearchParams {
+    destination: string;
+    checkInDate: string;
+    checkOutDate: string;
+    adults: number;
+    rooms: number;
+}
+
+
+interface Child {
+    age: number;
+}
+
+interface Region {
+    name: string;
+    id: number | null; 
+}
 
 const Search = () => {
-    const [searchParams, setSearchParams] = useState({
+    const [searchParams, setSearchParams] = useState<SearchParams>({
         destination: '',
         checkInDate: '',
         checkOutDate: '',
         adults: 1,
-        children: [{ age: '', count: 1 }],
         rooms: 1
     });
+    const [suggestions, setSuggestions] = useState<any[]>([]);
+    const [children, setChildren] = useState<Child[]>([]);
+    const [isLoading, setIsLoading] = useState(false);
+    const [regionId, setRegionId] = useState<number | null>(null);
     const router = useRouter();
-
-    const dummyHotelProperties = [
-        {
-            id : 1,
-            title: 'Hotel Sunshine',
-            price: '$100 per night',
-            image: 'https://via.placeholder.com/150'
-        },
-        {
-            id : 2,
-            title: 'Grand Palace Hotel',
-            price: '$150 per night',
-            image: 'https://via.placeholder.com/150'
-        },
-        {
-            id : 3,
-            title: 'Oceanview Resort',
-            price: '$200 per night',
-            image: 'https://via.placeholder.com/150'
-        }
-    ];
 
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const { name, value } = e.target;
         setSearchParams(prevParams => ({
             ...prevParams,
-            [name]: value
+            [name]: value,
         }));
     };
 
-    const handleChildChange = (index: number, field: string, value: any) => {
-        const newChildren = searchParams.children.map((child, i) =>
-            i === index ? { ...child, [field]: value } : child
-        );
+    const fetchRegions = async (query: string) => {
+        const body = JSON.stringify({
+            query: query,
+            lang: "en"
+        });
+
+        const requestOptions: RequestInit = {
+            method: 'POST',
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: body
+        };
+
+        try {
+            const response = await fetch("/api/search/proxy", requestOptions);
+            const result = await response.json();
+            console.log("Result:", result);
+
+            if (result.data && result.data.regions) {
+                const cities = result.data.regions.filter((region: any) => region.type === 'City');
+                setSuggestions(cities);  
+            } else {
+                console.log('No regions found');
+                setSuggestions([]); 
+            }
+        } catch (error) {
+            console.log('Error:', error);
+            setSuggestions([]);  
+        }
+    };
+
+    useEffect(() => {
+        if (searchParams.destination.length > 2) {
+            fetchRegions(searchParams.destination);
+        } else {
+            setSuggestions([]);
+        }
+    }, [searchParams.destination]);
+
+
+    const incrementAdults = (e: { preventDefault: () => void; }) => {
+        e.preventDefault();
         setSearchParams(prevParams => ({
             ...prevParams,
-            children: newChildren
+            adults: prevParams.adults + 1
         }));
     };
 
-    const addChild = () => {
+    const decrementAdults = (e: { preventDefault: () => void; }) => {
+        e.preventDefault();
         setSearchParams(prevParams => ({
             ...prevParams,
-            children: [...prevParams.children, { age: '', count: 1 }]
+            adults: Math.max(1, prevParams.adults - 1)
         }));
     };
 
-    const deleteChild = (indexToDelete: number) => {
-        setSearchParams(prevParams => ({
-            ...prevParams,
-            children: prevParams.children.filter((_, index) => index !== indexToDelete)
-        }));
+    const incrementChildren = (e: { preventDefault: () => void; }) => {
+        e.preventDefault();
+        setChildren(prevChildren => [...prevChildren, { age: 2 }]);
     };
+
+    const decrementChildren = (e: { preventDefault: () => void; }) => {
+        e.preventDefault();
+        setChildren(prevChildren => prevChildren.slice(0, -1));
+    };
+
+
+    const guests = JSON.stringify([{
+        adults: searchParams.adults,
+        children: children
+    }]);
 
     const onSubmit = (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
-        console.log(searchParams);
-    }
-
-    const handleViewDetails = (id: number) => {
-        router.push(`/hotel/details/${id}`);
+        const keys = [
+            `pricing: ${regionId}-${searchParams.checkInDate}-${searchParams.checkOutDate}-${searchParams.adults}-${children.length}`,
+            `static: ${regionId}`
+        ];
+        router.push({
+            pathname: '/booking',
+            query: {
+                ...searchParams,
+                guests: guests,
+                regionId: regionId, 
+            },
+        });
     };
 
+    const handleSuggestionClick = (region: Region) => {
+        setSearchParams(prevState => ({
+            ...prevState,
+            destination: region.name
+        }));
+        setRegionId(region.id);
+        console.log(region);
+        setSuggestions([]);
+    };
+
+    const today = new Date().toISOString().split('T')[0];
+    const minCheckOutDate = searchParams.checkInDate ? new Date(new Date(searchParams.checkInDate).getTime() + 86400000).toISOString().split('T')[0] : today;
+
+    
+
     return (
-        <div className="search-container">
-            <h1>Check-In Search</h1>
-            <button onClick={() => router.push("/reservation")}>click me</button>
+        <div className="form-container">
             <form className="search-form" onSubmit={onSubmit}>
                 <div className="form-row">
-                    <input
-                        className="destination-input"
-                        type="text"
-                        name="destination"
-                        value={searchParams.destination}
-                        onChange={handleInputChange}
-                        placeholder="Destination"
-                    />
+                    <div className="input-wrapper">
+                        <input
+                            className="destination-input"
+                            type="text"
+                            name="destination"
+                            value={searchParams.destination}
+                            onChange={handleInputChange}
+                            placeholder="Destination"
+                        />
+                        {suggestions.length > 0 && (
+                            <div className="suggestions-list-wrapper">
+                                <ul className="suggestions-list">
+                                    {suggestions.map((region) => (
+                                        <li key={region.id} onClick={() => handleSuggestionClick(region)}>
+                                            <div className="suggestion-text">
+                                                <span className="suggestion-name">{region.name}, {region.country_code}</span>
+                                            </div>
+                                        </li>
+                                    ))}
+                                </ul>
+                            </div>
+                        )}
+                    </div>
                     <input
                         className="date-input"
                         type="date"
                         name="checkInDate"
                         value={searchParams.checkInDate}
                         onChange={handleInputChange}
+                        min={today}
                     />
                     <input
                         className="date-input"
@@ -102,72 +188,25 @@ const Search = () => {
                         name="checkOutDate"
                         value={searchParams.checkOutDate}
                         onChange={handleInputChange}
+                        min={minCheckOutDate}
                     />
-                    <input
-                        className="number-input"
-                        type="number"
-                        name="adults"
-                        value={searchParams.adults}
-                        onChange={handleInputChange}
-                        placeholder="Number of Adults"
-                    />
-                    <div className="children-inputs-container">
-                        {searchParams.children.map((child, index) => (
-                            <div key={index} className="children-input-group">
-                                <input
-                                    className="number-input child-age-input"
-                                    type="number"
-                                    name="childAge"
-                                    value={child.age}
-                                    onChange={(e) => handleChildChange(index, 'age', e.target.value)}
-                                    placeholder="Child Age"
-                                />
-                                <input
-                                    className="number-input child-count-input"
-                                    type="number"
-                                    name="childCount"
-                                    value={child.count}
-                                    onChange={(e) => handleChildChange(index, 'count', e.target.value)}
-                                    placeholder="Number of Children"
-                                />
-                                {searchParams.children.length > 1 && (
-                                    <button type="button" className="delete-child-button" onClick={() => deleteChild(index)}>
-                                        Delete Child
-                                    </button>
-                                )}
-                            </div>
-                        ))}
-                        <button type="button" className="add-child-button" onClick={addChild}>Add Child</button>
+                    <div className="input-group">
+                        <span className="input-label">Adults</span>
+                        <button onClick={decrementAdults} disabled={searchParams.adults <= 1}>-</button>
+                        <input type="text" readOnly value={searchParams.adults} aria-label="Adults" />
+                        <button onClick={incrementAdults}>+</button>
                     </div>
-                    <input
-                        className="number-input"
-                        type="number"
-                        name="rooms"
-                        value={searchParams.rooms}
-                        onChange={handleInputChange}
-                        placeholder="Number of Rooms"
-                    />
-                    <button type="submit" className="search-button">Search</button>
+                    <div className="input-group">
+                        <span className="input-label">Children</span>
+                        <button onClick={decrementChildren} disabled={children.length <= 0}>-</button>
+                        <input type="text" readOnly value={children.length} aria-label="Children" />
+                        <button onClick={incrementChildren}>+</button>
+                    </div>
+                    <button type="submit" className="search-button" disabled={isLoading}> Search </button>
                 </div>
             </form>
-            <div className="properties-list">
-                <h1>Available Hotels</h1>
-                <ul>
-                    {dummyHotelProperties.map((property, index) => (
-                        <li key={index} className="property-item">
-                            <h2>{property.title}</h2>
-                            <p className="price">{property.price}</p>
-                            {property.image && (
-                                <img src={property.image} alt={property.title} className="property-image" />
-                            )}
-                            <br />
-                            <button type="button" onClick={() => handleViewDetails(property.id)}>View Details</button>
-                        </li>
-                    ))}
-                </ul>
-            </div>
         </div>
-    );
-}
+    );    
+};
 
 export default Search;

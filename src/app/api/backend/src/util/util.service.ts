@@ -11,7 +11,7 @@ export class UtilService {
         });
     };
     async dataPipeline(key: string, data: any[], ttl: number) {
-        console.log('reached here');
+        // console.log('reached here');
         const pipeline = this.client.pipeline();
         data.forEach(async (element, index) => {
             pipeline.zadd(key, index+1, JSON.stringify(element));

@@ -30,8 +30,6 @@ const HotelBooking = () => {
         currency: 'USD'
     });
 
-    console.log("regionid: ", hotelSearchParams.region_id);
-
     const cancelTokenRef = useRef<CancelTokenSource | null>(null);
     const [suggestions, setSuggestions] = useState<any[]>([]);
     const [isLoading, setIsLoading] = useState(false);
@@ -144,36 +142,24 @@ const HotelBooking = () => {
     };
 
     const searchHotels = async () => {
-        if (!hotelSearchParams.region_id || hotelSearchParams.region_id <= 0) {
-            setError('Invalid region selected. Please choose a valid region.');
-            return;
-        }
-    
         setIsLoading(true);
         setError(null);
-    
+
         if (cancelTokenRef.current) {
             cancelTokenRef.current.cancel("Canceled due to new request");
         }
         cancelTokenRef.current = axios.CancelToken.source();
 
-        const keys = [
-            `pricing: ${hotelSearchParams.region_id}-${hotelSearchParams.checkin}-${hotelSearchParams.checkout}-${hotelSearchParams.guests[0].adults}-${hotelSearchParams.guests[0].children.length}`,
-            `static: ${hotelSearchParams.region_id}`
-        ];
-        
-    
         const body = {
             ...hotelSearchParams,
-            keys,
             pageNumber: page
         };
-            
+
         try {
             const response = await axios.post("http://localhost:5001/hotels/search", body, {
                 cancelToken: cancelTokenRef.current.token
             });
-    
+
             if (response.data && response.data.data) {
                 const [hotelCache] = response.data.data;
                 const [idCache] = response.data.data;
@@ -202,7 +188,6 @@ const HotelBooking = () => {
             setIsLoading(false);
         }
     };
-    
 
     const fetchStaticData = async (hotelIDs: string[]) => {
         try {

@@ -20,7 +20,7 @@ const Login = () => {
     })
     .then((res) =>  {
       console.log(res);
-      window.location.href = `/booking`;
+      window.location.href = `/search`;
     })
     .catch(err => {
       console.log(err);

@@ -1,7 +1,6 @@
 import HotelBooking from "@/components/HotelBooking";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
-
 const page = () => {
   const queryClient = new QueryClient();
   return (
