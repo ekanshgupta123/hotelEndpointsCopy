@@ -557,7 +557,20 @@ body, html {
 
 .info-icon {
   margin-left: 5px;
-  color: rgba(0, 0, 0, 0.54); /* Adjust the color as needed */
+  color: rgba(0, 0, 0, 0.54);
 }
 
 
+
+.spinner-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh; 
+  width: 100%;   
+  position: fixed; 
+  top: 0;
+  left: 0;
+  z-index: 9999; 
+  background-color: rgba(255, 255, 255, 0.8); 
+}

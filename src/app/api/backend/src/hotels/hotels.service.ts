@@ -214,6 +214,7 @@ export class HotelsService {
       keys,
       pageNumber,
     } = searchParams;
+
     const exists = await this.utilService.keyExists(keys[0]);
     if (exists) return await this.redisCache(keys, pageNumber, true, region_id);
 

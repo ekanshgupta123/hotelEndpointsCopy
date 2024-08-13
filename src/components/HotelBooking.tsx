@@ -7,7 +7,7 @@ import Spinner from './Spinner';
 import axios, { CancelTokenSource } from 'axios';
 import GoogleMapsComponent from './GoogleMapsComponent';
 import { Slider, Checkbox, FormControlLabel } from '@mui/material';
-import { Tooltip } from '@mui/material';
+import { Tooltip, CircularProgress } from '@mui/material';
 import InfoIcon from '@mui/icons-material/Info';
 import { useRouter } from 'next/router';
 
@@ -200,6 +200,10 @@ const HotelBooking = () => {
             handleErrors(error);
         } finally {
             setIsLoading(false);
+            window.scrollTo({
+                top: 0,
+                behavior: 'smooth'
+            });
         }
     };
     
@@ -297,11 +301,18 @@ const HotelBooking = () => {
                         <button type="submit" className="search-button" disabled={isLoading}> Search </button>
                     </div>
                 </form> */}
-                {isLoading}
-                {error && (
-                    <Alert severity="error">
-                        Error: {error}
-                    </Alert>
+                {isLoading ? (
+                    <div className="spinner-container">
+                        <CircularProgress /> {/* Spinner */}
+                    </div>
+                ) : (
+                    <>
+                        {error && (
+                            <Alert severity="error">
+                                Error: {error}
+                            </Alert>
+                        )}
+                    </>
                 )}
                 <div className="content-wrapper">
                     <div className="filter-container">
