@@ -150,6 +150,8 @@ export class HotelsService {
     const keyId = this.configService.get<string>('KEY_ID');
     const apiKey = this.configService.get<string>('API_KEY');
 
+    console.log(params);
+
     const { checkin, checkout, residency, language, guests, ids, currency } =
       params;
 
@@ -214,7 +216,6 @@ export class HotelsService {
       keys,
       pageNumber,
     } = searchParams;
-
     const exists = await this.utilService.keyExists(keys[0]);
     if (exists) return await this.redisCache(keys, pageNumber, true, region_id);
 
@@ -270,6 +271,9 @@ export class HotelsService {
         }),
       )
       .toPromise();
+
+
+    
     return await this.redisCache(
       keys,
       pageNumber,
@@ -280,57 +284,61 @@ export class HotelsService {
   }
 
   async fetchHotelRooms(searchParams: any): Promise<any> {
-    const keyId = this.configService.get<string>('KEY_ID');
-    const apiKey = this.configService.get<string>('API_KEY');
+    try {
+        const keyId = this.configService.get<string>('KEY_ID');
+        const apiKey = this.configService.get<string>('API_KEY');
 
-    const { residency, language, guests, id, currency } = searchParams;
+        const { residency, language, guests, id, currency } = searchParams;
 
-    const checkin = this.convertToISO8601Format(searchParams.checkin);
-    const checkout = this.convertToISO8601Format(searchParams.checkout);
+        const checkin = this.convertToISO8601Format(searchParams.checkin);
+        const checkout = this.convertToISO8601Format(searchParams.checkout);
 
-    searchParams.guests.forEach((guest: any, index: number) => {
-      const childrenAges = guest.children.map(
-        (child: { age: number }) => child.age,
-      );
-    });
+        searchParams.guests.forEach((guest: any, index: number) => {
+        const childrenAges = guest.children.map(
+            (child: { age: number }) => child.age,
+        );
+        });
 
-    const requestBody = {
-      checkin,
-      checkout,
-      residency,
-      language,
-      guests: guests.map((guest) => ({
-        adults: guest.adults,
-        children: guest.children.map((child: { age: number }) => child.age),
-      })),
-      id,
-      currency,
-    };
+        const requestBody = {
+        checkin,
+        checkout,
+        residency,
+        language,
+        guests: guests.map((guest) => ({
+            adults: guest.adults,
+            children: guest.children.map((child: { age: number }) => child.age),
+        })),
+        id,
+        currency,
+        };
 
-    const headers = {
-      'Content-Type': 'application/json',
-      Authorization: `Basic ${Buffer.from(`${keyId}:${apiKey}`).toString('base64')}`,
-    };
+        const headers = {
+        'Content-Type': 'application/json',
+        Authorization: `Basic ${Buffer.from(`${keyId}:${apiKey}`).toString('base64')}`,
+        };
 
-    return this.httpService
-      .post('https://api.worldota.net/api/b2b/v3/search/hp/', requestBody, {
-        headers,
-      })
-      .pipe(
-        map((response) => response.data),
-        catchError((error) => {
-          console.error(
-            'Error in fetchHotelRooms:',
-            error.response?.data || error.message,
-          );
-          return throwError(
-            new HttpException(
-              'Failed to fetch hotel rooms',
-              HttpStatus.INTERNAL_SERVER_ERROR,
-            ),
-          );
-        }),
-      )
-      .toPromise();
+        return this.httpService
+        .post('https://api.worldota.net/api/b2b/v3/search/hp/', requestBody, {
+            headers,
+        })
+        .pipe(
+            map((response) => response.data),
+            catchError((error) => {
+            console.error(
+                'Error in fetchHotelRooms:',
+                error.response?.data || error.message,
+            );
+            return throwError(
+                new HttpException(
+                'Failed to fetch hotel rooms',
+                HttpStatus.INTERNAL_SERVER_ERROR,
+                ),
+            );
+            }),
+        )
+        .toPromise();
+    } catch (e) {
+        console.error(e);
+    }
   }
 }

@@ -7,9 +7,13 @@ import Spinner from './Spinner';
 import axios, { CancelTokenSource } from 'axios';
 import GoogleMapsComponent from './GoogleMapsComponent';
 import { Slider, Checkbox, FormControlLabel } from '@mui/material';
-import { Tooltip, CircularProgress } from '@mui/material';
+import { Tooltip, CircularProgress, Button } from '@mui/material';
 import InfoIcon from '@mui/icons-material/Info';
 import { useRouter } from 'next/router';
+import SearchModal from './SearchModal';
+import SearchSummary from './SearchSummary';
+import search from '@/pages/search';
+
 
 interface Child {
     age: number;
@@ -17,20 +21,48 @@ interface Child {
 
 const HotelBooking = () => {
     const router = useRouter();
-    const { destination, checkInDate, checkOutDate, guests, rooms, regionId } = router.query;
-
-    const parsedGuests = guests ? JSON.parse(guests as string) : [];
     const [hotelSearchParams, setHotelSearchParams] = useState({
-        checkin: checkInDate as string,
-        checkout: checkOutDate as string,
+        checkin:  '',
+        checkout: '',
         residency: 'us',
         language: 'en',
-        guests: parsedGuests,
-        region_id: Number(regionId) || null,
-        currency: 'USD'
+        guests: [],
+        region_id: 0,
+        currency: 'USD',
+        destination: '',
+        adults: 1,
+        rooms: 1,
     });
+    
+    React.useEffect(() => {
+        if (!router.isReady) return;
+        if (router.isReady) {
+          const { guests, regionId, searchParams, destination } = router.query;
+
+          if (!regionId) return;
+          const parsedGuests = guests ? JSON.parse(guests as string) : [];
+            const parsedSearchParams = searchParams ? JSON.parse(searchParams as string) : {};
+
+
+            setHotelSearchParams({
+                checkin: parsedSearchParams.checkInDate || '',
+                checkout: parsedSearchParams.checkOutDate || '',
+                residency: 'us',
+                language: 'en',
+                guests: parsedGuests,
+                region_id: Number(regionId),
+                currency: 'USD',
+                destination: destination as string || '',
+                adults: parsedSearchParams.adults || 1,
+                rooms: parsedSearchParams.rooms || 1,
+            });
+          console.log(router.query);
+        }
+      }, [router.isReady]);
+
 
     console.log("regionid: ", hotelSearchParams.region_id);
+    console.log("destination from hotelsearch: ", hotelSearchParams.destination);
 
     const cancelTokenRef = useRef<CancelTokenSource | null>(null);
     const [suggestions, setSuggestions] = useState<any[]>([]);
@@ -46,6 +78,8 @@ const HotelBooking = () => {
     const [priceRange, setPriceRange] = useState<number[]>([0, 5000]);
     const [selectedRatings, setSelectedRatings] = useState<number[]>([]);
     const [selectedMeals, setSelectedMeals] = useState<string[]>([]);
+    const [isModalOpen, setIsModalOpen] = useState(false);
+
 
     const mealOptions = [
         { label: 'No meals included', value: 'nomeal' },
@@ -61,32 +95,37 @@ const HotelBooking = () => {
     }, [page]);
 
 
-    const incrementAdults = (e: { preventDefault: () => void; }) => {
-        e.preventDefault();
-        setHotelSearchParams(prevParams => ({
-            ...prevParams,
-            adults: prevParams.guests.adults + 1
-        }));
-    };
+    const handleSearch = (searchParams: any) => {
+        console.log('Searching with params:', searchParams);
+        const childrenArray = Array.from({ length: searchParams.children }, () => ({ age: 0 }));
+        console.log("childrenArray: ", childrenArray);
+        const guests = [{
+            adults: searchParams.adults,
+            children: childrenArray
+        }];
 
-    const decrementAdults = (e: { preventDefault: () => void; }) => {
-        e.preventDefault();
-        setHotelSearchParams(prevParams => ({
-            ...prevParams,
-            adults: Math.max(1, prevParams.guests.adults - 1)
-        }));
-    };
+        const guestsStringify = JSON.stringify([{
+            adults: searchParams.adults,
+            children: children
+        }]);
 
-    const incrementChildren = (e: { preventDefault: () => void; }) => {
-        e.preventDefault();
-        setChildren(prevChildren => [...prevChildren, { age: 2 }]);
+        console.log("guests: ", guests);
+    
+        setHotelSearchParams({
+            checkin: searchParams.checkInDate,
+            checkout: searchParams.checkOutDate,
+            residency: 'us',
+            language: 'en',
+            guests: guests,
+            region_id: Number(searchParams.regionId),
+            currency: 'USD',
+            destination: searchParams.destination,
+            adults: searchParams.adults,
+            rooms: searchParams.rooms
+        })
+        router.push(`/booking?guests=${guestsStringify}&regionId=${searchParams.regionId}&destination=${searchParams.destination}&searchParams=${encodeURIComponent(JSON.stringify(searchParams))}`);
     };
-
-    const decrementChildren = (e: { preventDefault: () => void; }) => {
-        e.preventDefault();
-        setChildren(prevChildren => prevChildren.slice(0, -1));
-    };
-
+    
     const handleMinPriceChange = (event: React.ChangeEvent<HTMLInputElement>) => {
         const value = Math.max(0, Math.min(parseInt(event.target.value), priceRange[1]));
         setPriceRange([value, priceRange[1]]);
@@ -95,14 +134,6 @@ const HotelBooking = () => {
     const handleMaxPriceChange = (event: React.ChangeEvent<HTMLInputElement>) => {
         const value = Math.max(priceRange[0], Math.min(parseInt(event.target.value), 5000));
         setPriceRange([priceRange[0], value]);
-    };
-
-    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const { name, value } = e.target;
-        setHotelSearchParams(prevParams => ({
-            ...prevParams,
-            [name]: name === 'adults' ? parseInt(value, 10) || 0 : value
-        }));
     };
 
     const handlePriceChange = (event: Event, newValue: number | number[]) => {
@@ -143,6 +174,15 @@ const HotelBooking = () => {
         }
     };
 
+
+    useEffect(() => {
+        if (hotelSearchParams.region_id && hotelSearchParams.region_id > 0) {
+            searchHotels();
+        }
+    }, [hotelSearchParams, page]);
+    
+
+    
     const searchHotels = async () => {
         if (!hotelSearchParams.region_id || hotelSearchParams.region_id <= 0) {
             setError('Invalid region selected. Please choose a valid region.');
@@ -162,6 +202,8 @@ const HotelBooking = () => {
             `static: ${hotelSearchParams.region_id}`
         ];
         
+
+        console.log("Keys: ", keys);
     
         const body = {
             ...hotelSearchParams,
@@ -245,78 +287,30 @@ const HotelBooking = () => {
         <div className="main-wrapper">
             <header><Navbar /></header>
             <div className="search-container">
-                {/* <form className="search-form" onSubmit={onSubmit}>
-                    <div className="form-row">
-                        <div className="input-wrapper">
-                            <input
-                                className="destination-input"
-                                type="text"
-                                name="destination"
-                                value={searchParams.destination}
-                                onChange={handleInputChange}
-                                placeholder="Destination"
-                            />
-                            {suggestions.length > 0 && (
-                                <div className="suggestions-list-wrapper">
-                                    <ul className="suggestions-list">
-                                        {suggestions.map((region) => (
-                                            <li key={region.id} onClick={() => handleSuggestionClick(region)}>
-                                                <div className="suggestion-text">
-                                                    <span className="suggestion-name">{region.name}, {region.country_code}</span>
-                                                </div>
-                                            </li>
-                                        ))}
-                                    </ul>
-                                </div>
-                            )}
-                        </div>
-                        <input
-                            className="date-input"
-                            type="date"
-                            name="checkInDate"
-                            value={searchParams.checkInDate}
-                            onChange={handleInputChange}
-                            min={today}
-                        />
-                        <input
-                            className="date-input"
-                            type="date"
-                            name="checkOutDate"
-                            value={searchParams.checkOutDate}
-                            onChange={handleInputChange}
-                            min={minCheckOutDate}
-                        />
-                        <div className="input-group">
-                            <span className="input-label">Adults</span>
-                            <button onClick={decrementAdults} disabled={searchParams.adults <= 1}>-</button>
-                            <input type="text" readOnly value={searchParams.adults} aria-label="Adults" />
-                            <button onClick={incrementAdults}>+</button>
-                        </div>
-                        <div className="input-group">
-                            <span className="input-label">Children</span>
-                            <button onClick={decrementChildren} disabled={children.length <= 0}>-</button>
-                            <input type="text" readOnly value={children.length} aria-label="Children" />
-                            <button onClick={incrementChildren}>+</button>
-                        </div>
-                        <button type="submit" className="search-button" disabled={isLoading}> Search </button>
-                    </div>
-                </form> */}
                 {isLoading ? (
                     <div className="spinner-container">
                         <CircularProgress /> {/* Spinner */}
                     </div>
                 ) : (
                     <>
-                        {error && (
+                        {/* {error && (
                             <Alert severity="error">
                                 Error: {error}
                             </Alert>
-                        )}
+                        )} */}
                     </>
                 )}
                 <div className="content-wrapper">
                     <div className="filter-container">
                         <h3>Filter Options</h3>
+                        <SearchSummary
+                            destination={hotelSearchParams.destination}
+                            checkInDate={hotelSearchParams.checkin}
+                            checkOutDate={hotelSearchParams.checkout}
+                            rooms={hotelSearchParams.rooms}
+                            guests={hotelSearchParams.guests}
+                            onEdit={() => setIsModalOpen(true)} // Opens the modal to edit the search
+                        />
                         <div className="filter-option">
                             <label>Price Range</label>
                             <div className="price-range-container">
@@ -443,6 +437,18 @@ const HotelBooking = () => {
                         }))} loading={isLoading} searchParams={hotelSearchParams} />
                     </div>
                 </div>
+                <SearchModal
+                    isOpen={isModalOpen}
+                    onClose={() => setIsModalOpen(false)}
+                    onSearch={handleSearch}
+                    originalDestination={hotelSearchParams.destination}
+                    originalCheckInDate={hotelSearchParams.checkin}
+                    originalCheckOutDate={hotelSearchParams.checkout}
+                    originalAdults={hotelSearchParams.guests.length > 0 ? hotelSearchParams.guests[0].adults : 1}
+                    originalChildren={hotelSearchParams.guests.length > 0 ? hotelSearchParams.guests[0].children.length : 0}
+                    originalRooms={hotelSearchParams.rooms}
+                />
+
             </div>
         </div>
     );

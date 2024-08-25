@@ -72,7 +72,7 @@ const GoogleMapsComponent = ({ addresses, loading, searchParams }) => {
   };
 
   return (
-    <LoadScript googleMapsApiKey={process.env.googleMapsApiKey}>
+    <LoadScript googleMapsApiKey="AIzaSyA9zeSrKXlgbBr0Jfkzz_2XZzg1G6ES5IE">
       <GoogleMap
         mapContainerStyle={containerStyle}
         center={markers.length > 0 ? markers[0].position : { lat: 0, lng: 0 }}

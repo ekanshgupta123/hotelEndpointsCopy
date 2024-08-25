@@ -150,5 +150,5 @@ export const HotelSchema = new mongoose.Schema({
     room_groups: [{ type: individualRoom }],
     star_rating: Number
 }, {
-    collection: 'static-data'
+    collection: 'static-hotel-data'
 });

@@ -1,12 +1,17 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import * as cookieParser from 'cookie-parser';
+import { json, urlencoded } from 'express';
+
 import * as os from 'os';
 const numCPUs = os.cpus().length;
 const cluster = require('cluster');
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, { abortOnError: false });
+  app.use(json({ limit: '50mb' }));
+  app.use(urlencoded({ limit: '50mb', extended: true }));
+
   app.enableCors({
     origin: true,
     methods: ["GET", "POST", "DELETE"],

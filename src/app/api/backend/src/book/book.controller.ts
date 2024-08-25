@@ -29,11 +29,11 @@ export class BookController {
   async checkStatus (@Query('pID') partnerID: string, @Res() response: Response): Promise<Response> {
     try {
       if (!partnerID) {
-        return response.status(HttpStatus.BAD_REQUEST)
+        return response.status(HttpStatus.BAD_REQUEST).send('Bad Request');
       };
       const apiCall: string = await this.bookService.bookingStatus(partnerID);
       return response.status(HttpStatus.OK).json({
-          status: 'Awaiting confirmation...',
+          status: 'All set!',
           data: apiCall
         });
     } catch (e) {
@@ -48,52 +48,33 @@ export class BookController {
     @Ip() remoteAddress: string, 
     @Res() response: Response): Promise<Response> {
     try {
-      const { id, checkin, checkout, guests } = request.body;
-      if (!id || !checkin || !checkout || !guests) {
-        return response.status(HttpStatus.BAD_REQUEST)
+      const { data, lookup } = request.body;
+      console.log(data, lookup); // here
+      const { id, checkin, checkout, guests } = data;
+      if (!id || !checkin || !checkout || !guests || !lookup) {
+        return response.status(HttpStatus.BAD_REQUEST).send('Bad Request');
       };
       const jwtToken: string = request.cookies['token'];
       const { name, email } = this.jwtService.decode(jwtToken);
       const [first, last] = name.split(" ");
-      const hashAvailable = await this.bookService.getInfo(request.body);
-      const formBooking = await this.bookService.bookingForm(hashAvailable, remoteAddress);
-      const { ratesList, payUUID } = formBooking;
+      const hashFound = await this.bookService.getInfo(request.body);
+      const ratesList = await this.bookService.bookingForm(hashFound, remoteAddress);
       const apiCall = await this.bookService.bookingFinish(
         ratesList, 
         first, 
         last, 
         email
       ); 
-
-      // console.log("APICALL: ", apiCall.confirmation);
-      // console.log("APICALL: ", apiCall.creditNeeded);
-      // console.log("APICALL: ", apiCall.pID);
+      console.log(apiCall);
       return response.status(HttpStatus.OK).json({
         status: 'Order has been placed.',
         data: { partnerID: apiCall.pID, 
-          objectID: ratesList.item_id, 
-          pUUID: payUUID,
-          credit: apiCall.creditNeeded,
           userName: [first, last],
           confirmation: apiCall.confirmation }
       });
     } catch (e) {
       console.error(e);
-      return response.status(HttpStatus.INTERNAL_SERVER_ERROR).json({ error: e })
-    };
-  };
-
-  @Post('credit')
-  @HttpCode(201)
-  async creditTokenization (@Body() params: TokenFormat, @Res() response: Response): Promise<Response> {
-    try {
-      const apiCall = await this.bookService.creditProcessing(params);
-      return response.status(HttpStatus.OK).json({ 
-        status: 'Payment processed. Booking is finished.', 
-        data: apiCall 
-      });
-    } catch (e) {
-      return response.status(HttpStatus.INTERNAL_SERVER_ERROR).json({ error: e })
+      return response.status(HttpStatus.INTERNAL_SERVER_ERROR).json({ error: e });
     };
   };
 
@@ -102,7 +83,7 @@ export class BookController {
   async cancelOrder (@Headers('pID') partnerID: string, @Res() response: Response): Promise<Response> {
     try {
       if (!partnerID) {
-        return response.status(HttpStatus.BAD_REQUEST)
+        return response.status(HttpStatus.BAD_REQUEST).send('Bad Request');
       };
       const apiCall: string = await this.bookService.cancelBooking(partnerID);
       return response.status(HttpStatus.OK).json({

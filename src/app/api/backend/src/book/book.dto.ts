@@ -1,7 +1,9 @@
 export class PageData {
+  changes: { price_changed: boolean };
   hotels: {
       id: string;
       rates: {
+        rg_ext: any;
         book_hash: string;
       }[];
   }[];
@@ -45,8 +47,6 @@ export class Status {
   };
 
 export class FinalSchema {
-  creditNeeded: boolean;
-  cvcNeeded: boolean;
   pID: string;
   confirmation: string;
 };
@@ -68,4 +68,3 @@ export class TokenFormat {
   "credit_card_data_core": CoreData;
   "is_cvc_required": boolean;
 };
-
